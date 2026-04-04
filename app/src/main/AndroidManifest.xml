@@ -11,6 +11,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.STProject" >
-        <service android:name=".LocationRecovererService.LocationRecovererService"/>
+        <service
+            android:name=".LocationRecovererService.LocationRecovererService"
+            android:foregroundServiceType="location"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
 </manifest>
