@@ -44,4 +44,10 @@
         android:textColor="@color/purple_text_dark"
         />
 
+    <Button
+        android:id="@+id/consult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mes Voyages" />
+
 </LinearLayout>

@@ -38,8 +38,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation(libs.google.maps)
     testImplementation(libs.junit)
+    implementation("org.osmdroid:osmdroid-android:6.1.14")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
