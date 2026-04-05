@@ -3,6 +3,7 @@ package com.example.stproject.LocationRecovererService;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Binder;
 import android.os.IBinder;
 import android.os.Looper;
 
@@ -28,16 +29,14 @@ public class LocationRecovererService extends Service {
     private static class CallbackOnLocation extends LocationCallback {
         @Override
         public void onLocationAvailability(LocationAvailability availability){
-            if (availability.isLocationAvailable()) {
-                /* Ne rien faire, la localisation de l'appareil est possible */
-            } else {
+            if (!availability.isLocationAvailable()) {
                 /* Préciser que l'obtention de sa localisation est impossible */
             }
         }
 
         @Override
         public void onLocationResult(LocationResult result){
-            /* Je vais utiliser la fonction qu'Olivier va créer pour upload le résultat de la requête (batch de localisation) dans la DB*/
+            /* Je vais utiliser la fonction qu'Olivier va créer pour upload le résultat de la requête (batch de localisation) dans la DB */
         }
     }
 
@@ -45,23 +44,32 @@ public class LocationRecovererService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId){
         /* Il faut également regarder les permissions de l'app */
 
-        if (!isTracking){ /* Pour être sûr de ne pas lancer plusieurs fois un suivi */
-            try {
-                /* Il faut encore préciser que le service est en ForeGround et non en BackGround (pour des raisons de sécurité) */
-                flpClient.requestLocationUpdates(locationReq, callBack, Looper.getMainLooper());
-                isTracking = true;
-            } catch (SecurityException e){
-                /* Arrêt du service */
-                stopSelf();
-                return START_NOT_STICKY; /* Indique à l'OS de ne pas recréer le service */
-            }
+        switch (intent.getAction()){
+            case "ACTION_START" :
+                if (!isTracking){
+                    try {
+                        /* il faut créer un foreground service avec une notification */
+                        flpClient.requestLocationUpdates(locationReq, callBack, Looper.getMainLooper());
+                        isTracking = true;
+                    } catch (SecurityException e){
+                        stopSelf();
+                        return START_NOT_STICKY;
+                    }
+                }
+                break;
+            case "ACTION_PAUSE" :
+                this.pauseTracking();
+                break;
+            default :
+                return START_NOT_STICKY;
         }
+
         return START_STICKY; /* Tout est bon, on peut dire à l'OS de garder le service en vie */
     }
 
     @Override
     public IBinder onBind(Intent intent){
-        /* Si l'utilisateur souhaite effectuer une pause dans son voyage (via un lien entre l'UI et le service) */
+        /* Si l'utilisateur souhaite effectuer une pause dans son voyage (via un IBinder entre l'UI et le service) */
     }
 
     @Override
@@ -91,5 +99,13 @@ public class LocationRecovererService extends Service {
         super.onDestroy();
         /* Mettre fin au suivi de localisation */
         flpClient.removeLocationUpdates(callBack);
+    }
+
+    private void pauseTracking(){
+        if (isTracking){
+            flpClient.removeLocationUpdates(callBack);
+            isTracking = false;
+            /* Préciser dans la notification que le suivi est en pause */
+        }
     }
 }

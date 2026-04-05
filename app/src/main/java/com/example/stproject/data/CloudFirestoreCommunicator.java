@@ -1,13 +1,17 @@
-package com.example.stproject;
+package com.example.stproject.DBCommunicators;
 //manque apparament le databasereference et firebasedatabase 
 
-public class dbcommunicator {
+import android.location.Location;
+
+import java.util.List;
+
+public class CloudFirestoreCommunicator {
     private static firebaseService instance;
-    private databasereference database
+    private databasereference database;
     
-    public DbCommunicator(){
-        database = FirebaseDatabase.getInstance().getReference(),
-    }
+    public CloudFirestoreCommunicator(){
+        database = FirebaseDatabase.getInstance().getReference();
+    } // Si j'ai bien compris, c'est le constructeur de la classe
 
     public void ajout_d_un_voyage(){
         //creation d un voyage
@@ -39,6 +43,11 @@ public class dbcommunicator {
 
     }
     public void modification_dun_poi(){
+
+    }
+
+    /* Envoie de localisations à la DB */
+    public void send_loc(List<Location> data){
 
     }
     
