@@ -1,9 +1,7 @@
-package com.example.stproject.LocationRecovererService;
+package com.example.stproject.service;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Binder;
 import android.os.IBinder;
 import android.os.Looper;
 
