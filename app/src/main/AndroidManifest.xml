@@ -17,7 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.STProject" >
         <service
-            android:name=".LocationRecovererService.LocationRecovererService"
+            android:name=".service.LocationRecovererService"
             android:foregroundServiceType="location"
             android:enabled="true"
             android:exported="false"/>
