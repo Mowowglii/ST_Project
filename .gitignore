@@ -13,3 +13,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Fichiers de secrets et clés API
+secrets.gradle
+api-keys.properties
+*.key
+*.env
+app/src/main/res/values/secrets.xml  # Ajout de secrets.xml
+app/src/main/res/values/google_maps_api.xml

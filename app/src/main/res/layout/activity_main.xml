@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <ImageView
+        android:id="@+id/imgLogo"
+        android:layout_width="174dp"
+        android:layout_height="183dp"
+        android:layout_gravity="center"
+        android:contentDescription="@string/app_logo"
+        android:paddingBottom="16dp"
+        android:src="@drawable/smart" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/welcome_message"
+        android:textColor="@color/pastel_purple"
+        android:textSize="24sp" />
+
+    <EditText
+        android:id="@+id/editTripName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/trip_name"
+        android:autofillHints="none"
+        android:inputType="text"
+        android:minHeight="48dp"
+        android:minWidth="48dp"
+        android:padding="12dp"
+        />
+
+    <Button
+        android:id="@+id/btnStart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/pastel_purple"
+        android:text="@string/start_button"
+        android:textColor="@color/purple_text_dark"
+        />
+
+</LinearLayout>
