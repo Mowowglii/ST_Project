@@ -36,5 +36,6 @@ class Carte : AppCompatActivity() {
         marker.position = startPoint
         marker.title = tripName
         map.overlays.add(marker)
+
     }
 }

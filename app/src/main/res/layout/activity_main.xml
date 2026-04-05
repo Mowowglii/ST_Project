@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -8,8 +9,8 @@
 
     <ImageView
         android:id="@+id/imgLogo"
-        android:layout_width="174dp"
-        android:layout_height="183dp"
+        android:layout_width="294dp"
+        android:layout_height="231dp"
         android:layout_gravity="center"
         android:contentDescription="@string/app_logo"
         android:paddingBottom="16dp"
