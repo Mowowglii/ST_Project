@@ -1,10 +1,17 @@
 package com.example.stproject.service;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 
+import androidx.core.app.NotificationCompat;
+
+import com.example.stproject.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.location.LocationCallback;
@@ -14,7 +21,14 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 
 public class LocationRecovererService extends Service {
+    /* Définir l'id du channel pour la notification */
+    private static final String CHANNEL_ID = "location_service_channel";
+
+    /* Définir l'id de la notification */
+    private static final int NOTIFICATION_ID = 1;
+
     private FusedLocationProviderClient flpClient;
+
     private LocationRequest locationReq;
 
     private CallbackOnLocation callBack;
@@ -46,7 +60,8 @@ public class LocationRecovererService extends Service {
             case "ACTION_START" :
                 if (!isTracking){
                     try {
-                        /* il faut créer un foreground service avec une notification */
+                        /* créer un foreground service avec une notification */
+                        startForeground(NOTIFICATION_ID, buildNotification("Searching for position..."));
                         flpClient.requestLocationUpdates(locationReq, callBack, Looper.getMainLooper());
                         isTracking = true;
                     } catch (SecurityException e){
@@ -89,14 +104,21 @@ public class LocationRecovererService extends Service {
 
         /* Initialiser le callback pour les résultats de requêtes */
         callBack = new CallbackOnLocation();
+
+        /* Créer la notification */
+        createNotificationChannel();
     }
 
     @Override
     public void onDestroy(){
-        /* Mettre fin au service */
-        super.onDestroy();
-        /* Mettre fin au suivi de localisation */
+        // Dire à l'OS que ce service n'est plus en foreground
+        stopForeground(STOP_FOREGROUND_REMOVE);
+
+        // Mettre fin au suivi de localisation
         flpClient.removeLocationUpdates(callBack);
+
+        // Finaliser la destruction du service
+        super.onDestroy();
     }
 
     private void pauseTracking(){
@@ -104,6 +126,38 @@ public class LocationRecovererService extends Service {
             flpClient.removeLocationUpdates(callBack);
             isTracking = false;
             /* Préciser dans la notification que le suivi est en pause */
+            updateNotification("Tracking Paused");
         }
+    }
+
+    private void createNotificationChannel(){
+        /* La version de l'OS doit être Android 8.0 (API 26) ou au-dessus */
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "ST Tracking Service",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+
+            /* Inscrire le channel via le système */
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null){
+                manager.createNotificationChannel(serviceChannel);
+            }
+        }
+    }
+
+    private Notification buildNotification(String text){
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("ST Tracking Service")
+                .setContentText(text)
+                .setSmallIcon(R.drawable.ic_launcher_foreground) // Logo/Image de la notification, on pourra la modifier plus tard
+                .build();
+    }
+
+    private void updateNotification(String newText){
+        Notification notification = buildNotification(newText);
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        manager.notify(NOTIFICATION_ID, notification);
     }
 }
