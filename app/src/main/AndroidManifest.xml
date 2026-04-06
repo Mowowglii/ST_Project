@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- Demande d'accès à la localisation précise -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- Permission de créer un Service en premier-plan -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Permission d'accès à la localisation en premier-plan -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <!-- Permission d'afficher une notification -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:allowBackup="true"
