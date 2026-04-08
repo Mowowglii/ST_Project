@@ -1,22 +1,19 @@
+# Android / IntelliJ
+.idea/
 *.iml
 .gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+local.properties
 /build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
 
-# Fichiers de secrets et clés API
+# Mac
+.DS_Store
+
+# Secrets
 secrets.gradle
 api-keys.properties
 *.key
 *.env
-app/src/main/res/values/secrets.xml  # Ajout de secrets.xml
+app/src/main/res/values/secrets.xml
