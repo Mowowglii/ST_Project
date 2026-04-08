@@ -69,14 +69,18 @@ public class LocationRecovererService extends Service {
                 || ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)  == PackageManager.PERMISSION_DENIED
                 || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED
         ) {
-            return START_NOT_STICKY; // le lancement rate
+            return START_NOT_STICKY; // l'OS peut demander l'interruption du service
+        }
+        /* l'OS essaie de relancer le service sans Intent */
+        if (intent == null){
+            return START_STICKY; // réessayer un lancement
         }
         /* Vérifier que le message reçu est bon */
         String action;
         if (Objects.equals(intent.getAction(), "ACTION_START") || Objects.equals(intent.getAction(), "ACTION_PAUSE")){
             action = intent.getAction();
         } else {
-            return START_NOT_STICKY; // le lancement rate
+            return START_STICKY; // réessayer un lancement
         }
 
         switch (action){
@@ -89,24 +93,21 @@ public class LocationRecovererService extends Service {
                         isTracking = true;
                     } catch (SecurityException e){
                         stopSelf();
-                        return START_NOT_STICKY;
+                        return START_NOT_STICKY; // L'OS peut demander l'interruption du service
                     }
                 }
                 break;
             case "ACTION_PAUSE" :
                 this.pauseTracking();
                 break;
-            default :
-                return START_NOT_STICKY;
         }
 
         return START_STICKY; /* Tout est bon, on peut dire à l'OS de garder le service en vie */
     }
 
     @Override
-    public IBinder onBind(Intent intent){
-        /* Si l'utilisateur souhaite effectuer une pause dans son voyage (via un Binder entre l'UI et le service). */
-        return new Binder();
+    public IBinder onBind(Intent intent){ /* Cette méthode ne sera jamais utilisée */
+        return null;
     }
 
     @Override
