@@ -37,5 +37,17 @@ class Carte : AppCompatActivity() {
         marker.title = tripName
         map.overlays.add(marker)
 
+
+        // Mathushan qui ajouté ici
+        // detecteur contient une instance de la classe DetecteurClicCarte qui gère les événements de clic
+        val detecteur = DetecteurClicCarte()
+
+        // Overlay permet de capter les interactions sur la carte et les transmettre au detecteur (single tap et long press)
+        val overlay = MapEventsOverlay(detecteur)
+
+        // On ajoute cet overlay à la map pour détecter les clics
+        map.overlays.add(overlay)
+
+
     }
 }
