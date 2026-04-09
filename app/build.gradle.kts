@@ -39,7 +39,9 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
-    implementation("org.osmdroid:osmdroid-android:6.1.14")
+    implementation(libs.playlocation)
+    implementation(libs.osmdroid)
+    implementation(libs.google.maps)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
