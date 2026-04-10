@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -39,9 +40,17 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
+    // Base de Données
+    implementation(platform(libs.firebase.bom)) // Import de la librairie Firebase Cloud Storage
+
+    implementation(libs.firebase.firestore) // Import de firebase firestore
+    implementation(libs.firebase.storage) // Import de firebase Cloud Storage
+
+    // Tout ce qui est lié à la localisation
     implementation(libs.playlocation)
     implementation(libs.osmdroid)
     implementation(libs.google.maps)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
