@@ -4,11 +4,11 @@ import com.example.stproject.models.POI;
 import java.util.ArrayList;
 import java.util.List;
 
-public class gestionnairePOI {
-    // private dis seulement qu'on veut initialisé mais il n'est pas encore crée
+public class RepertoirePOI {
+    // Une liste qu"on indique seulement qu'on veut initialisé mais il n'est pas encore crée
     private List<POI> poiList;
 
-    public gestionnairePOI() {
+    public RepertoirePOI() {
         // c'est ici qu'on crée une liste
         poiList = new ArrayList<>();
     }
