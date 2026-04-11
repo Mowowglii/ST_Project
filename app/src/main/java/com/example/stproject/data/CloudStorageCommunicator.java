@@ -31,14 +31,14 @@ public class CloudStorageCommunicator {
         Pair<StorageReference, Uri> pair = new Pair<>(uploadRef, uri);
 
         // Ajouter à la file d'attente
-        uploadQueue.add(pair);
+        this.uploadQueue.add(pair);
     }
 
-    public void uploadQueue(){
+    public void uploadQueueToDB(){
         // Boucle sur la file d'attente
-        while(!uploadQueue.isEmpty()){
+        while(!this.uploadQueue.isEmpty()){
             // Envoie du fichier à la base de donnée
-            UploadTask uTask = uploadQueue.remove().first.putFile(uploadQueue.remove().second);
+            UploadTask uTask = this.uploadQueue.remove().first.putFile(this.uploadQueue.remove().second);
             // En cas de succès de l'envoi du fichier à la base de donnée
             uTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
