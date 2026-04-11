@@ -20,6 +20,10 @@ public class CloudStorageCommunicator {
     private final StorageReference CSCRef = CSCInstance.getReference(); // Référence Firebase Storage
     private Queue<Pair<StorageReference, Uri>> uploadQueue; // File des envois à la base de donnée
 
+    // Constructeur de la classe
+    public CloudStorageCommunicator(){
+    }
+
     public void addTripImage(String imagePath, String tripName){
         // Créer l'Uri du fichier
         Uri uri = Uri.fromFile( new File(imagePath) );
