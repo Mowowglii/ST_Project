@@ -4,11 +4,11 @@ import com.example.stproject.models.POI;
 import java.util.ArrayList;
 import java.util.List;
 
-public class repertoirePOI {
+public class RepertoirePOI {
     // Une liste qu"on indique seulement qu'on veut initialisé mais il n'est pas encore crée
     private List<POI> poiList;
 
-    public repertoirePOI() {
+    public RepertoirePOI() {
         // c'est ici qu'on crée une liste
         poiList = new ArrayList<>();
     }
@@ -21,4 +21,3 @@ public class repertoirePOI {
         return poiList;
     }
 }
-
