@@ -1,0 +1,38 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <EditText
+        android:id="@+id/poiName"
+        android:hint="@string/poi_name"
+        android:inputType="textPersonName"
+        android:autofillHints="name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <RatingBar
+        android:id="@+id/poiRating"
+        android:numStars="5"
+        android:stepSize="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+
+    <ImageView
+        android:id="@+id/imagephoto"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:contentDescription="ST Project"
+        android:src="@drawable/ic_photo"
+        android:tint="@color/black" />
+        <!--app:layout_constraintTop_toTopOf="parent"-->
+
+    <Button
+        android:id="@+id/saveBtn"
+        android:text="@string/save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

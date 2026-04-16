@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
         val editTripName = findViewById<EditText>(R.id.editTripName)
         val btnConsult = findViewById<Button>(R.id.consult)
 
-        btnConsult.setOnClickListener {
+        btnConsult.setOnClickListener {// censer amener vers la page consultation qui resume tout les voyages
             val cst = Intent(this, Consultation::class.java)
             startActivity(cst)
 
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
             // Ouvre la Carte
             val intent = Intent(this, Carte::class.java)
-            intent.putExtra("trip_name", tripName)  // <-- ici on passe le nom du voyage
+            intent.putExtra("trip_name", tripName)  // ici on passe le nom du voyage
             startActivity(intent)
 
         }

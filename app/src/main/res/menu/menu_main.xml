@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/delete_trip"
+        android:title="@string/delete_trip"/>
+
+    <item
+        android:id="@+id/personalise"
+        android:title="@string/personalise"/>
+
+
+</menu>
