@@ -24,7 +24,7 @@ class PoiEditDialog(
         val nameInput = view.findViewById<EditText>(R.id.poiName)
         val ratingBar = view.findViewById<RatingBar>(R.id.poiRating)
         val saveBtn = view.findViewById<Button>(R.id.saveBtn)
-        val addphoto = view.findViewById<Button>(R.id.addphoto)
+        val imagephoto = view.findViewById<Button>(R.id.imagephoto)
 
         nameInput.setText(poi.name)
         ratingBar.rating = poi.note

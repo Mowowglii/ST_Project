@@ -1,17 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent">
 
+    <!-- NOM -->
     <EditText
         android:id="@+id/poiName"
-        android:hint="@string/poi_name"
-        android:inputType="textPersonName"
-        android:autofillHints="name"
+        android:hint="Nom du POI"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
+    <!-- notation etoiles -->
     <RatingBar
         android:id="@+id/poiRating"
         android:numStars="5"
@@ -19,19 +20,41 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
+    <!-- Avis que l'utilisateur peut mettre -->
+    <EditText
+        android:id="@+id/poiReview"
+        android:hint="Ton avis..."
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:gravity="top"
+        android:inputType="textMultiLine"/>
 
+    <!-- affichage des photo inserer -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/photoPager"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginTop="12dp"/>
+
+    <!-- pour un espace "flexible"-->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <!-- permet ajout de photos -->
     <ImageView
         android:id="@+id/imagephoto"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:contentDescription="ST Project"
+        android:contentDescription="photo"
         android:src="@drawable/ic_photo"
-        android:tint="@color/black" />
-        <!--app:layout_constraintTop_toTopOf="parent"-->
+        android:tint="@android:color/black" />
 
+    <!-- sauvegarde du poi -->
     <Button
         android:id="@+id/saveBtn"
-        android:text="@string/save"
+        android:text="Sauvegarder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
