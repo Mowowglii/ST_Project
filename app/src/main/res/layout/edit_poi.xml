@@ -1,61 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- NOM -->
-    <EditText
-        android:id="@+id/poiName"
-        android:hint="Nom du POI"
+    <!-- 🔝 TOP BAR -->
+
+    <!-- 📜 CONTENU SCROLL -->
+    <LinearLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="56dp"
+        android:background="#CC222222"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
 
-    <!-- notation etoiles -->
-    <RatingBar
-        android:id="@+id/poiRating"
-        android:numStars="5"
-        android:stepSize="1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        <!-- 🔙 RETOUR -->
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:clickable="true"
+            android:contentDescription="Retour"
+            android:focusable="true"
+            android:src="@drawable/ic_arrow_back" />
 
-    <!-- Avis que l'utilisateur peut mettre -->
-    <EditText
-        android:id="@+id/poiReview"
-        android:hint="Ton avis..."
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:gravity="top"
-        android:inputType="textMultiLine"/>
+        <!-- ESPACE -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-    <!-- affichage des photo inserer -->
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/photoPager"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_marginTop="12dp"/>
+        <!-- ☑️ SÉLECTION -->
+        <ImageView
+            android:id="@+id/btnSelectMode"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:clickable="true"
+            android:contentDescription="Sélection photos"
+            android:focusable="true"
+            android:src="@drawable/ic_check" />
 
-    <!-- pour un espace "flexible"-->
-    <Space
+    </LinearLayout>
+
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1">
 
-    <!-- permet ajout de photos -->
-    <ImageView
-        android:id="@+id/imagephoto"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:contentDescription="photo"
-        android:src="@drawable/ic_photo"
-        android:tint="@android:color/black" />
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-    <!-- sauvegarde du poi -->
+            <!-- 🏷️ NOM -->
+            <EditText
+                android:id="@+id/poiName"
+                android:hint="Nom du POI"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <!-- 📌 TYPE -->
+            <Spinner
+                android:id="@+id/spinnerTypeLieu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"/>
+
+            <!-- ⭐ NOTE -->
+            <RatingBar
+                android:id="@+id/poiRating"
+                android:numStars="5"
+                android:stepSize="1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"/>
+
+            <!-- 📝 DESCRIPTION -->
+            <EditText
+                android:id="@+id/poiReview"
+                android:hint="Description..."
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:layout_marginTop="8dp"/>
+
+            <!-- 📸 GRILLE PHOTOS -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/photoGrid"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:layout_marginTop="12dp"/>
+
+            <!-- ➕ AJOUT PHOTO -->
+            <ImageView
+                android:id="@+id/imagephoto"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="12dp"
+                android:padding="12dp"
+                android:background="#22000000"
+                android:src="@drawable/ic_photo"
+                android:tint="#000000"/>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- 💾 BOUTON SAUVEGARDE -->
     <Button
         android:id="@+id/saveBtn"
-        android:text="Sauvegarder"
+        android:text="Sauvegarder POI"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"/>
 
 </LinearLayout>

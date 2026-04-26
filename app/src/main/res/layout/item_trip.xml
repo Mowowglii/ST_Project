@@ -1,41 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="180dp"
-    android:layout_margin="8dp">
-
-    <!-- correspond à la page qui s'affiche si des voyages ont déjà été enregistrés -->
-
-    <ImageView
-        android:id="@+id/tripImage"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/sample_trip" />
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_gravity="bottom"
-        android:orientation="vertical"
-        android:background="@color/pastel_purple"
-        android:padding="8dp">
+        android:layout_height="56dp"
+        android:background="#CC222222"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
 
-        <TextView
-            android:id="@+id/tripName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Nom du voyage"
-            android:textStyle="bold"
-            android:textSize="14sp" />
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:clickable="true"
+            android:contentDescription="Retour"
+            android:focusable="true"
+            android:src="@drawable/ic_arrow_back" />
 
-        <TextView
-            android:id="@+id/tripDuration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Durée"
-            android:textSize="12sp" />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/btnSelectMode"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:clickable="true"
+            android:contentDescription="Sélection voyages"
+            android:focusable="true"
+            android:src="@drawable/ic_check" />
 
     </LinearLayout>
 
-</FrameLayout>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/tripsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_margin="8dp">
+
+                <ImageView
+                    android:id="@+id/tripImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/sample_trip" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_gravity="bottom"
+                    android:background="@color/pastel_purple"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/tripName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nom du voyage"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tripDuration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Durée"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/btnEditTrip"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="10dp"
+                    android:contentDescription="Modifier"
+                    android:src="@drawable/ic_modif"
+                    android:tint="@android:color/black" />
+
+                <ImageView
+                    android:id="@+id/btnSelectTrip"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="10dp"
+                    android:contentDescription="Sélectionner"
+                    android:src="@drawable/ic_check_circle"
+                    android:tint="@android:color/white" />
+
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

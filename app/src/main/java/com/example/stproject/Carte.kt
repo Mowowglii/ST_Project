@@ -1,23 +1,13 @@
 package com.example.stproject
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.location.Geocoder
 import android.os.Bundle
-import android.view.View
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
-import android.widget.ImageView
-import android.widget.PopupMenu
-import android.widget.SearchView
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.libraries.places.api.Places
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
-import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -27,257 +17,258 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 class Carte : AppCompatActivity() {
 
-    private val poiList = mutableListOf<POI>()
-    private var routeLine: Polyline? = null
-
     private lateinit var map: MapView
     private lateinit var locationOverlay: MyLocationNewOverlay
-    private lateinit var placesClient: PlacesClient
 
-    private val requestlocation = 1
+    // État du voyage : arrêté, en cours ou en pause
+    private enum class TripState { IDLE, RUNNING, PAUSED }
+    private var tripState = TripState.IDLE
 
-    private var lastSearchedPoint: GeoPoint? = null
-    private var lastMarker: Marker? = null
+    // Liste des points GPS enregistrés pendant le trajet
+    private val trackingPoints = mutableListOf<GeoPoint>()
+
+    // Liste des points d'intérêt (POI) ajoutés par l'utilisateur
+    private val poiList = mutableListOf<POI>()
+
+    // Ligne représentant le trajet sur la carte
+    private var routeLine: Polyline? = null
+
+    // Dernier point enregistré avant une pause du trajet
+    private var lastPointBeforePause: GeoPoint? = null
+
+    // Handler utilisé pour exécuter un suivi GPS périodique
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Chargement de la configuration osmdroid
         Configuration.getInstance().load(
             applicationContext,
-            getSharedPreferences("OSMDroidPrefs", MODE_PRIVATE)
+            getSharedPreferences("osmdroid", MODE_PRIVATE)
         )
-        Configuration.getInstance().userAgentValue = packageName
 
         setContentView(R.layout.activity_carte)
 
-        val tripName = intent.getStringExtra("trip_name") ?: "Mon voyage"
-        supportActionBar?.title = tripName
-
-        val menuIcon = findViewById<ImageView>(R.id.imageMenu)
-
-        menuIcon.setOnClickListener {
-            val popup = PopupMenu(this, it)
-            popup.menuInflater.inflate(R.menu.menu_main, popup.menu)
-
-            popup.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-
-                    R.id.personalise -> {
-                        Toast.makeText(this, "voyage personalisé", Toast.LENGTH_SHORT).show()
-                        true
-                    }
-
-                    R.id.delete_trip -> {
-                        poiList.clear()
-                        map.overlays.clear()
-                        map.overlays.add(locationOverlay) // garder GPS
-                        Toast.makeText(this, "Trajet supprimé", Toast.LENGTH_SHORT).show()
-                        true
-                    }
-
-                    else -> false
-                }
-            }
-
-            popup.show()
-        }
-
-        val recycler = findViewById<RecyclerView>(R.id.recyclerSuggestions)
-        recycler.layoutManager = LinearLayoutManager(this)
-        recycler.adapter = SuggestionsAdapter(emptyList()) { selected ->
-            searchLocation(selected)
-        }
-
+        // Initialisation de la carte
         map = findViewById(R.id.map)
         map.setMultiTouchControls(true)
 
-        Places.initialize(applicationContext, "TAIzaSyBYhdnVYa3T85ngWsTZ6VfOYz_QXbEYBjE")
-        placesClient = Places.createClient(this)
+        // Désactivation de la répétition de la carte pour éviter les duplications du monde
+        map.isHorizontalMapRepetitionEnabled = false
+        map.isVerticalMapRepetitionEnabled = false
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                requestlocation
-            )
-        } else {
-            setupMap()
-        }
+        // Limitation du niveau de zoom pour éviter un dézoom excessif
+        map.minZoomLevel = 3.0
+        map.maxZoomLevel = 20.0
 
-        val searchView = findViewById<SearchView>(R.id.searchView)
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                if (!query.isNullOrEmpty()) searchLocation(query)
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (!newText.isNullOrEmpty()) getSuggestions(newText)
-                return true
-            }
-        })
-
-        findViewById<Button>(R.id.btnAddPoint).setOnClickListener {
-            lastSearchedPoint?.let { point ->
-
-                val poi = POI(
-                    name = lastMarker?.title ?: "Lieu",
-                    geoPoint = point
-                )
-
-                poiList.add(poi)
-
-                lastMarker?.title =
-                    if (poiList.size == 1) "Départ"
-                    else "Étape ${poiList.size}"
-
-                drawRoute()
-
-                lastSearchedPoint = null
-                lastMarker = null
-            }
-        }
+        setupGPS()
+        initButtons()
     }
 
-    private fun setupMap() {
-
+    // Initialisation de la localisation GPS utilisateur
+    private fun setupGPS() {
         locationOverlay = MyLocationNewOverlay(map)
-
         locationOverlay.enableMyLocation()
-        locationOverlay.enableFollowLocation()
-        locationOverlay.isDrawAccuracyEnabled = true
 
         map.overlays.add(locationOverlay)
 
-        map.controller.setZoom(20.0)
-
+        // Centrage automatique sur la position de l'utilisateur lors du premier fix GPS
         locationOverlay.runOnFirstFix {
             runOnUiThread {
-                val userLocation = locationOverlay.myLocation
-                if (userLocation != null) {
-                    map.controller.setCenter(userLocation)
+                locationOverlay.myLocation?.let {
+                    map.controller.setZoom(18.0)
+                    map.controller.setCenter(it)
                 }
             }
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    // Démarrage d’un nouveau trajet
+    private fun startTrip() {
+        tripState = TripState.RUNNING
+        trackingPoints.clear()
 
-        if (requestCode == requestlocation &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            setupMap()
-        }
+        startTrackingLoop()
+        Toast.makeText(this, "Voyage démarré", Toast.LENGTH_SHORT).show()
     }
 
-    private fun openPoiEditor(poi: POI) {
-
-        val dialog = PoiEditDialog(poi) { updatedPoi ->
-
-            poi.name = updatedPoi.name
-            poi.note = updatedPoi.note
-            poi.photos = updatedPoi.photos
-
-            // refresh map si besoin
-            map.invalidate()
-        }
-
-        dialog.show(supportFragmentManager, "poi_editor")
+    // Mise en pause du trajet
+    private fun pauseTrip() {
+        tripState = TripState.PAUSED
+        lastPointBeforePause = trackingPoints.lastOrNull()
+        Toast.makeText(this, "Voyage en pause", Toast.LENGTH_SHORT).show()
     }
 
-    @Suppress("DEPRECATION")
-    private fun searchLocation(locationName: String) {
+    // Reprise du trajet après une pause
+    private fun resumeTrip() {
+        tripState = TripState.RUNNING
 
-        val geocoder = Geocoder(this)
+        locationOverlay.myLocation?.let { loc ->
+            val newPoint = GeoPoint(loc.latitude, loc.longitude)
 
-        try {
-            val addresses = geocoder.getFromLocationName(locationName, 1)
+            // Dessine une ligne entre la dernière position et la reprise
+            lastPointBeforePause?.let { old ->
+                drawDashedLine(old, newPoint)
+            }
 
-            if (!addresses.isNullOrEmpty()) {
+            trackingPoints.add(newPoint)
+        }
 
-                val address = addresses[0]
-                val geoPoint = GeoPoint(address.latitude, address.longitude)
+        startTrackingLoop()
+        Toast.makeText(this, "Voyage repris", Toast.LENGTH_SHORT).show()
+    }
 
-                lastSearchedPoint = geoPoint
+    // Arrêt du trajet
+    private fun stopTrip() {
+        tripState = TripState.IDLE
+    }
 
-                lastMarker?.let { map.overlays.remove(it) }
+    // Boucle de suivi GPS toutes les 3 secondes
+    private fun startTrackingLoop() {
+        handler.post(object : Runnable {
+            override fun run() {
 
-                val marker = Marker(map)
-                marker.position = geoPoint
-                marker.title = locationName
+                if (tripState == TripState.RUNNING) {
 
-                marker.setOnMarkerClickListener { m, _ ->
+                    locationOverlay.myLocation?.let { loc ->
+                        val point = GeoPoint(loc.latitude, loc.longitude)
 
-                    val poi = poiList.find { it.geoPoint == m.position }
-
-                    if (poi != null) {
-                        openPoiEditor(poi)
+                        trackingPoints.add(point)
+                        drawRoute()
                     }
-
-                    true
                 }
 
-                map.overlays.add(marker)
-
-                lastMarker = marker
-
-                map.controller.setZoom(20.0)
-                map.controller.setCenter(geoPoint)
-
-                map.invalidate()
+                handler.postDelayed(this, 3000)
             }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        })
     }
 
+    // Dessine le trajet complet sur la carte
     private fun drawRoute() {
-
         routeLine?.let { map.overlays.remove(it) }
 
-        if (poiList.size < 2) return
-
         routeLine = Polyline().apply {
-            setPoints(poiList.map { it.geoPoint })
-            outlinePaint.strokeWidth = 8f
+            setPoints(trackingPoints)
+            outlinePaint.strokeWidth = 6f
         }
 
         map.overlays.add(routeLine)
+        map.invalidate()
     }
 
-    private fun getSuggestions(query: String) {
+    // Dessine une ligne en pointillés entre deux positions
+    private fun drawDashedLine(start: GeoPoint, end: GeoPoint) {
+        val dashedLine = Polyline().apply {
+            setPoints(listOf(start, end))
+            outlinePaint.strokeWidth = 6f
+        }
 
-        val request = FindAutocompletePredictionsRequest.builder()
-            .setQuery(query)
-            .build()
+        map.overlays.add(dashedLine)
+        map.invalidate()
+    }
 
-        placesClient.findAutocompletePredictions(request)
-            .addOnSuccessListener { response ->
+    // Ajout d’un point d’intérêt sur la carte
+    private fun addPOI() {
+        locationOverlay.myLocation?.let { loc ->
 
-                val newList = response.autocompletePredictions.map {
-                    it.getFullText(null).toString()
-                }
+            val poi = POI("POI", GeoPoint(loc.latitude, loc.longitude))
+            poiList.add(poi)
 
-                val recycler = findViewById<RecyclerView>(R.id.recyclerSuggestions)
+            val marker = Marker(map)
+            marker.position = poi.geoPoint
+            marker.title = poi.name
 
-                recycler.adapter = SuggestionsAdapter(newList) { selected ->
-                    searchLocation(selected)
-                }
+            map.overlays.add(marker)
+            map.invalidate()
+        }
+    }
 
-                recycler.visibility = View.VISIBLE
+    // Initialisation des boutons de l’interface
+    private fun initButtons() {
+
+        findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener {
+            showAddDialog()
+        }
+
+        findViewById<ImageButton>(R.id.btnStart).setOnClickListener {
+            if (tripState == TripState.PAUSED) {
+                showResumeDialog()
+            } else {
+                startTrip()
             }
+        }
+
+        findViewById<ImageButton>(R.id.btnPause).setOnClickListener {
+            pauseTrip()
+        }
+
+        findViewById<ImageButton>(R.id.btnStop).setOnClickListener {
+            showStopDialog()
+        }
+    }
+
+    // Boîte de dialogue pour ajouter un élément (POI ou photo)
+    private fun showAddDialog() {
+        val options = arrayOf("Ajouter POI", "Ajouter Photo")
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Ajouter")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> addPOI()
+                    1 -> Toast.makeText(this, "Photo à implémenter", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .show()
+    }
+
+    // Demande confirmation pour reprendre le voyage
+    private fun showResumeDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Reprendre le voyage")
+            .setMessage("Voulez-vous reprendre votre voyage ?")
+            .setPositiveButton("Oui") { _, _ -> resumeTrip() }
+            .setNegativeButton("Non", null)
+            .show()
+    }
+
+    // Boîte de dialogue de fin de trajet (sauvegarde ou suppression)
+    private fun showStopDialog() {
+
+        val dialogView = layoutInflater.inflate(R.layout.stop_save_trip, null)
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        val btnFinish = dialogView.findViewById<Button>(R.id.btnFinish)
+        val btnDelete = dialogView.findViewById<Button>(R.id.btnDelete)
+        val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
+
+        btnFinish.setOnClickListener {
+            stopTrip()
+            Toast.makeText(this, "Voyage terminé", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        btnDelete.setOnClickListener {
+            stopTrip()
+            trackingPoints.clear()
+            map.overlays.clear()
+            map.overlays.add(locationOverlay)
+            map.invalidate()
+
+            Toast.makeText(this, "Voyage supprimé", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 }
-
 // locationOverlay.runOnFirstFix : attend que le Gps ait une position
 // => execute le code quand le gps trouve position pour la premiere fois
