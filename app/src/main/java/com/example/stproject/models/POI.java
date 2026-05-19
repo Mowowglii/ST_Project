@@ -1,6 +1,5 @@
 package com.example.stproject.models;
 
-import java.util.UUID;
 public class POI {
 
     private String titre;
@@ -9,23 +8,24 @@ public class POI {
     // On utilise double parce que les coordonnées GPS necessitent une grande précision.
     private double latitude;
     private double longitude;
-    private UUID id;
 
-
-    public POI(String titre, String description, int note, double latitude, double longitude) {
+    public POI(String titre, String description, int note, double latitude, double longitude,String idvoyage) {
         this.titre = titre;
         this.description = description;
         this.note = note;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.id = id;
-
+        this.idvoyage = idvoyage;
     }
 
     // Les getters permettent d'accéder à des données déjà privée de manière contrôlée.
 
     public String getTitre() {
         return titre;
+    }
+
+    public String getidvoyagepoi() {
+        return idvoyage;
     }
 
     public String getDescription() {
@@ -42,10 +42,6 @@ public class POI {
 
     public double getLongitude() {
         return longitude;
-    }
-
-    public UUID getId() {
-        return id;
     }
 
 }
