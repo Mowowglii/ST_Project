@@ -19,11 +19,10 @@ public class Photo {
         this.imageURI = uriPhoto;
 
         StorageReference tripName = refPhoto.getParent();
-        tripName.
 
     }
 
-    public getRef(){
+    public StorageReference getRef(){
         return this.dbRef;
     }
 }
