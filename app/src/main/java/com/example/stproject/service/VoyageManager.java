@@ -1,44 +1,27 @@
 package com.example.stproject.service;
 
 import com.example.stproject.models.Voyage;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-
+import com.example.stproject.data.CloudFirestoreCommunicator;
 import java.util.ArrayList;
 
 public class VoyageManager {
 
-    private final DatabaseReference databaseRef;
-
+    private final CloudFirestoreCommunicator cfCommunicator = new CloudFirestoreCommunicator();
     private String currentVoyageId;
     private Voyage currentVoyage;
-
-    public VoyageManager() {
-        databaseRef = FirebaseDatabase.getInstance().getReference();
-    }
-
     public void creerNouveauVoyage(String titre) {
+        // Création de l'objet Voyage
+        currentVoyage = new Voyage(
+                "",
+                titre,
+                "",
+                null,
+                String.valueOf(System.currentTimeMillis()),
+                null,
+                new ArrayList<>()
+        );
 
-        String id = databaseRef.child("voyages").push().getKey();
-
-        if (id == null) {
-            return;
-        }
-
-        currentVoyageId = id;
-
-        currentVoyage = new Voyage();
-        currentVoyage.setId(id);
-        currentVoyage.setTitre(titre);
-        currentVoyage.setDescription("");
-        currentVoyage.setNote(null);
-        currentVoyage.setDateDebut(String.valueOf(System.currentTimeMillis()));
-        currentVoyage.setDateFin(null);
-        currentVoyage.setListePois(new ArrayList<>());
-
-        databaseRef.child("voyages")
-                .child(id)
-                .setValue(currentVoyage);
+        cfCommunicator.ajout_d_un_voyage(currentVoyage);
     }
 
     public String getCurrentVoyageId() {
