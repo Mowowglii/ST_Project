@@ -5,12 +5,15 @@ public class Voyage {
     private String description;
     private Integer note;
 
-    private String dateDebut;
-    private String dateFin;
+    // final => non modifiables après construction
+    private final String dateDebut;
+    private final String dateFin;
 
     private List<POI> listePois;
 
     public Voyage() {
+        this.dateDebut = null;
+        this.dateFin = null;
     }
 
     public Voyage(String id,
@@ -66,16 +69,8 @@ public class Voyage {
         return dateDebut;
     }
 
-    public void setDateDebut(String dateDebut) {
-        this.dateDebut = dateDebut;
-    }
-
     public String getDateFin() {
         return dateFin;
-    }
-
-    public void setDateFin(String dateFin) {
-        this.dateFin = dateFin;
     }
 
     public List<POI> getListePois() {

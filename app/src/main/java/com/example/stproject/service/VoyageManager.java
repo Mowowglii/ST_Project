@@ -19,6 +19,7 @@ public class VoyageManager {
 
     public void creerNouveauVoyage(String titre) {
 
+        // Génération d'un ID unique Firebase
         String id = databaseRef.child("voyages").push().getKey();
 
         if (id == null) {
@@ -27,18 +28,22 @@ public class VoyageManager {
 
         currentVoyageId = id;
 
-        currentVoyage = new Voyage();
-        currentVoyage.setId(id);
-        currentVoyage.setTitre(titre);
-        currentVoyage.setDescription("");
-        currentVoyage.setNote(null);
-        currentVoyage.setDateDebut(String.valueOf(System.currentTimeMillis()));
-        currentVoyage.setDateFin(null);
-        currentVoyage.setListePois(new ArrayList<>());
+        // Création de l'objet Voyage
+        currentVoyage = new Voyage(
+                id,
+                titre,
+                "",
+                null,
+                string,
+                null,
+                new ArrayList<>()
+        );
 
-        databaseRef.child("voyages")
-                .child(id)
-                .setValue(currentVoyage);
+        // Envoi dans Firebase
+        // une fonction que j'appelle à Olivier.
+//        databaseRef.child("voyages")
+//                .child(id)
+//                .setValue(currentVoyage);
     }
 
     public String getCurrentVoyageId() {
