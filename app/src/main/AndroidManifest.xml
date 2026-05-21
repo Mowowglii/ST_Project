@@ -43,7 +43,7 @@
         <service
             android:name=".service.LocationRecovererService"
             android:foregroundServiceType="location"
-            android:enable="true"
+            android:enabled="true"
             android:exported="false"/>
 
     </application>

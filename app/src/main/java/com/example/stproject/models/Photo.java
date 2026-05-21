@@ -23,6 +23,6 @@ public class Photo {
     }
 
     public StorageReference getRef(){
-        return this.dbRef;
+        return this.photoRef;
     }
 }
