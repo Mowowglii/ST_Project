@@ -112,7 +112,7 @@ public class CloudStorageCommunicator {
         }
     }
 
-    public void deleteImage(Photo image){
+    public void deleteImage(StorageReference){
 
     }
 }
