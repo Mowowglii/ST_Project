@@ -25,57 +25,55 @@ public class POI {
         return titre;
     }
 
+    public void setTitre(String titre) {
+        this.titre = titre;
+    }
+
     public String getDescription() {
         return description;
     }
 
-    public String type() {
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getType() {
         return type;
     }
 
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public int getNote() {
         return note;
+    }
+
+    public void setNote(int note) {
+        this.note = note;
     }
 
     public double getLatitude() {
         return latitude;
     }
 
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
     public double getLongitude() {
         return longitude;
     }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
     public String getIdVoyage() { 
-	return idVoyage; 
-	}
+        return idVoyage; 
+    }
+
     public void setIdVoyage(String idVoyage) { 
-	this.idVoyage = idVoyage; 
-	}
-
-
-
-    public String getTitre() {
-        return titre;
+        this.idVoyage = idVoyage; 
     }
-
-    public String getidvoyagepoi() {
-        return idvoyage;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public int getNote() {
-        return note;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
 }
-
