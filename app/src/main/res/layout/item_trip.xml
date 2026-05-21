@@ -106,7 +106,7 @@
                     android:layout_gravity="top|end"
                     android:layout_margin="10dp"
                     android:contentDescription="Sélectionner"
-                    android:src="@drawable/ic_check_circle"
+                    android:src="@drawable/ic_check"
                     android:tint="@android:color/white" />
 
             </FrameLayout>

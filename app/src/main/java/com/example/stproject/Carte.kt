@@ -1,5 +1,6 @@
 package com.example.stproject
 
+import com.example.stproject.models.POI
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -171,12 +172,15 @@ class Carte : AppCompatActivity() {
     // Ajout d’un point d’intérêt sur la carte
     private fun addPOI() {
         locationOverlay.myLocation?.let { loc ->
-
-            val poi = POI("POI", GeoPoint(loc.latitude, loc.longitude))
+            val poi = POI("POI", "Description", 0, loc.latitude, loc.longitude, tripId
+            )
             poiList.add(poi)
 
             val marker = Marker(map)
-            marker.position = poi.geoPoint
+            marker.position = GeoPoint(
+                poi.getLatitude(),
+                poi.getLongitude()
+            )
             marker.title = poi.name
 
             map.overlays.add(marker)

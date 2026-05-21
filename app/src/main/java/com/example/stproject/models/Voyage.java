@@ -1,35 +1,33 @@
+package com.example.stproject.models;
+
+import java.util.List;
+
 public class Voyage {
 
     private String id;
     private String titre;
     private String description;
     private Integer note;
-
-    private String dateDebut;
-    private String dateFin;
-
     private List<POI> listePois;
+    private List<Photo> listePhotos;
+    private List<Path> path= new ArrayList<>();
 
-    public Voyage() {
-    }
+    public Voyage() {}
 
-    public Voyage(String id,
-                  String titre,
-                  String description,
-                  Integer note,
-                  String dateDebut,
-                  String dateFin,
-                  List<POI> listePois) {
-
+    public Voyage(String id, String titre, String description, Integer note,
+                   List<POI> listePois, List<Photo> listePhotos,List<Path> path) {
         this.id = id;
         this.titre = titre;
         this.description = description;
         this.note = note;
-        this.dateDebut = dateDebut;
-        this.dateFin = dateFin;
         this.listePois = listePois;
+        this.listePhotos = listePhotos;
+        this.path = path;
+
+
     }
 
+    
     public String getId() {
         return id;
     }
@@ -62,22 +60,6 @@ public class Voyage {
         this.note = note;
     }
 
-    public String getDateDebut() {
-        return dateDebut;
-    }
-
-    public void setDateDebut(String dateDebut) {
-        this.dateDebut = dateDebut;
-    }
-
-    public String getDateFin() {
-        return dateFin;
-    }
-
-    public void setDateFin(String dateFin) {
-        this.dateFin = dateFin;
-    }
-
     public List<POI> getListePois() {
         return listePois;
     }
@@ -85,4 +67,20 @@ public class Voyage {
     public void setListePois(List<POI> listePois) {
         this.listePois = listePois;
     }
+
+    public List<Photo> getListePhotos() {
+        return listePhotos;
+    }
+
+    public void setListePhotos(List<Photo> listePhotos) {
+        this.listePhotos = listePhotos;
+    }
+
+    public List<Path> getPath() { 
+        return path;
+     }
+    public void setPath(List<Path> path) { 
+        this.path = path ;
+    }
+    
 }
