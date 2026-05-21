@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-import com.example.stproject.VoyageAdapter
+import com.example.stproject.ui.VoyageAdapter
 import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.Voyage
 

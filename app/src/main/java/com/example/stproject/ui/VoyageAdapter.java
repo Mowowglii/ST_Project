@@ -1,5 +1,6 @@
 ///  Cette class fait en sorte d' afficher ligne par ligne les voyages récupéré par la class consultation
 /// Cette class ne récupére rien de la base de donnée.
+package com.example.stproject.ui;
 
 import android.view.LayoutInflater;
 import android.view.View;
