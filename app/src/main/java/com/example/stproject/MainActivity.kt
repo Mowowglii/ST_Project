@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.stproject.service.VoyageManager
 
 // Activité principale de l'application
 // Elle sert de point d'entrée : création d'un voyage ou consultation des voyages existants
@@ -21,6 +22,11 @@ class MainActivity : AppCompatActivity() {
 
         // Charge le layout principal
         setContentView(R.layout.activity_main)
+
+        // Mathushan :
+        // Initialise le VoyageManager
+        // Il permettra la création et le suivi des voyages
+        val voyageManager = VoyageManager()
 
         // Ajuste automatiquement le padding pour éviter que le contenu passe sous la barre système
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -46,9 +52,18 @@ class MainActivity : AppCompatActivity() {
             // Récupération du nom du voyage saisi par l'utilisateur
             val tripName = editTripName.text.toString()
 
+            // Mathushan :
+            // Création du voyage
+            voyageManager.creerNouveauVoyage(tripName)
+            val tripId = voyageManager.currentVoyageId
+
+
             // Lancement de l'activité carte avec le nom du voyage en paramètre
             val intent = Intent(this, Carte::class.java)
             intent.putExtra("trip_name", tripName)
+            // Mathushan :
+            // Ajout de l'id à la carte
+            intent.putExtra("tripId", tripId)
 
             startActivity(intent)
         }

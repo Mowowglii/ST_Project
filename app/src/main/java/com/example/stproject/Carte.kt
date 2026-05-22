@@ -39,6 +39,10 @@ class Carte : AppCompatActivity() {
     // Handler utilisé pour exécuter un suivi GPS périodique
     private val handler = Handler(Looper.getMainLooper())
 
+    // Mathushan :
+    private var tripId : String? = null
+    private var tripName : String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -49,6 +53,10 @@ class Carte : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_carte)
+
+        // /Mathushan :
+        tripId = intent.getStringExtra("tripId")
+        tripName = intent.getStringExtra("trip_name")
 
         // Initialisation de la carte
         map = findViewById(R.id.map)

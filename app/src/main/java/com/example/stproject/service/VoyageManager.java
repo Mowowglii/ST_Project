@@ -12,6 +12,9 @@ public class VoyageManager {
     private Voyage currentVoyage;
 
     public VoyageManager() {
+        //Constructeur du VoyageManager
+        //Initialise le communicateur Firestore afin que le manager puisse
+        // effectuer des opérations sur la base de donnée.
         this.cfCommunicator = new CloudFirestoreCommunicator();
     }
 
