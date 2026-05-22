@@ -17,30 +17,72 @@ public class VoyageManager {
         // effectuer des opérations sur la base de donnée.
         this.cfCommunicator = new CloudFirestoreCommunicator();
     }
+    // On crée des CallBack pour attendre que les requêtes au niveau de la base de donnée soit fini
+    // Sinon il lancera la carte alors que les requêtes au niveau de la base de donnée n'est pas fini.
+    public interface CreationVoyageCallback {
+        void onSuccess(String voyageId, Voyage voyage);
+        void onError(String message);
+    }
+    public void creerNouveauVoyage(String titre, CreationVoyageCallback callback) {
+        if (titre == null ||titre.trim().isEmpty()) {
+            callback.onError("Veuillez entrer un nom de voyage");
+            return;
+        }
+        // Nettoyage des espaces au début et à la fin
+        String titreNettoye = titre.trim();
 
-    public void creerNouveauVoyage(String titre) {
+        // vérifie si un voyage avec ce nom existe déjà
+        cfCommunicator.verifierNomVoyageExiste(
+                titreNettoye,
+                // Si le voyage existe ou Si le voyage n'existe pas
+                new CloudFirestoreCommunicator.NomVoyageCallback() {
 
-        String id = cfCommunicator.cleUnique();
+                    @Override
+                    public void onResult(boolean existe) {
 
-        currentVoyage = new Voyage(
-                id,
-                titre,
-                "",
-                0,
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new ArrayList<>()
+                        // Le voyage existe déjà
+                        if (existe) {
+                            callback.onError("Ce voyage existe déjà");
+                            return;
+                        }
+
+                        // Génération de l'identifiant unique
+                        String id = cfCommunicator.cleUnique();
+
+                        // Création de l'objet voyage
+                        currentVoyage = new Voyage(
+                                id,
+                                titre,
+                                "",
+                                0,
+                                new ArrayList<>(),
+                                new ArrayList<>(),
+                                new ArrayList<>()
+                        );
+
+                        // Définit le voyage courant
+                        currentVoyageId = id;
+
+                        // Sauvegarde dans Firestore
+                        cfCommunicator.ajout_d_un_voyage(currentVoyage);
+                        // retour succès
+                        callback.onSuccess(currentVoyageId, currentVoyage);
+                    }
+
+                    @Override
+                    public void onError(String erreur) {
+                        callback.onError(erreur);
+                    }
+                }
         );
-
-        currentVoyageId = id;
-
-        cfCommunicator.ajout_d_un_voyage(currentVoyage);
     }
 
+    // Retourne l'id du voyage courant
     public String getCurrentVoyageId() {
         return currentVoyageId;
     }
 
+    // Retourne le voyage courant
     public Voyage getCurrentVoyage() {
         return currentVoyage;
     }

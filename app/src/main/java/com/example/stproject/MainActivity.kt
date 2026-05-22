@@ -4,11 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.stproject.service.VoyageManager
+import com.example.stproject.models.Voyage
 
 // Activité principale de l'application
 // Elle sert de point d'entrée : création d'un voyage ou consultation des voyages existants
@@ -54,18 +56,24 @@ class MainActivity : AppCompatActivity() {
 
             // Mathushan :
             // Création du voyage
-            voyageManager.creerNouveauVoyage(tripName)
-            val tripId = voyageManager.currentVoyageId
+            voyageManager.creerNouveauVoyage(
+                tripName,
+                object : VoyageManager.CreationVoyageCallback {
+                    override fun onSuccess(voyageId: String, voyage: Voyage) {
+                        val intent = Intent(this@MainActivity, Carte::class.java)
+                        intent.putExtra("trip_name", voyage.titre)
+                        // Mathushan :
+                        // Ajout de l'id à la carte
+                        intent.putExtra("tripId", voyageId)
 
+                        startActivity(intent)
+                    }
 
-            // Lancement de l'activité carte avec le nom du voyage en paramètre
-            val intent = Intent(this, Carte::class.java)
-            intent.putExtra("trip_name", tripName)
-            // Mathushan :
-            // Ajout de l'id à la carte
-            intent.putExtra("tripId", tripId)
-
-            startActivity(intent)
+                    override fun onError(message: String) {
+                        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
         }
     }
 }
