@@ -1,18 +1,26 @@
 package com.example.stproject.service;
 
-import com.example.stproject.models.Voyage;
 import com.example.stproject.data.CloudFirestoreCommunicator;
+import com.example.stproject.models.Voyage;
+
 import java.util.ArrayList;
 
 public class VoyageManager {
 
-    private final CloudFirestoreCommunicator cfCommunicator = new CloudFirestoreCommunicator();
+    private final CloudFirestoreCommunicator cfCommunicator;
     private String currentVoyageId;
     private Voyage currentVoyage;
+
+    public VoyageManager() {
+        this.cfCommunicator = new CloudFirestoreCommunicator();
+    }
+
     public void creerNouveauVoyage(String titre) {
-        // Création de l'objet Voyage
+
+        String id = cfCommunicator.cleUnique();
+
         currentVoyage = new Voyage(
-                "",
+                id,
                 titre,
                 "",
                 0,
@@ -20,6 +28,8 @@ public class VoyageManager {
                 new ArrayList<>(),
                 new ArrayList<>()
         );
+
+        currentVoyageId = id;
 
         cfCommunicator.ajout_d_un_voyage(currentVoyage);
     }
