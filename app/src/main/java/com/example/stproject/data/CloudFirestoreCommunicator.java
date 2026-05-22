@@ -4,7 +4,6 @@ import android.location.Location;
 import android.util.Log;
 
 import com.example.stproject.models.POI;
-import com.example.stproject.models.Path;
 import com.example.stproject.models.Photo;
 import com.example.stproject.models.Voyage;
 import com.google.firebase.firestore.DocumentReference;
@@ -44,7 +43,7 @@ public class CloudFirestoreCommunicator {
     }
 
     public interface PathCallback {
-        void onComplete(List<Path> path);
+        void onComplete(List<Location> path);
         void onError(String error);
     }
 
@@ -319,9 +318,9 @@ public class CloudFirestoreCommunicator {
     public void recuperer_path_voyage(String voyageId, PathCallback callback) {
         db.collection("voyages").document(voyageId).collection("path").get()
                 .addOnSuccessListener(docs -> {
-                    List<Path> path = new ArrayList<>();
+                    List<Location> path = new ArrayList<>();
                     for (DocumentSnapshot d : docs) {
-                        Path p = d.toObject(Path.class);
+                        Location p = d.toObject(Location.class);
                         if (p != null) path.add(p);
                     }
                     callback.onComplete(path);
