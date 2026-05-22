@@ -15,9 +15,9 @@ public class VoyageManager {
                 "",
                 titre,
                 "",
-                null,
-                String.valueOf(System.currentTimeMillis()),
-                null,
+                0,
+                new ArrayList<>(),
+                new ArrayList<>(),
                 new ArrayList<>()
         );
 
