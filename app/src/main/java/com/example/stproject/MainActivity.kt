@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Active l'affichage edge-to-edge (interface derrière les barres système)
+        // Active l'affichage edge to edge (interface derrière les barres système)
         enableEdgeToEdge()
 
         // Charge le layout principal

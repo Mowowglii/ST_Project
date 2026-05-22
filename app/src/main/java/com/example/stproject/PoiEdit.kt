@@ -4,7 +4,14 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.RatingBar
+import android.widget.Spinner
+import android.widget.Toast
+import com.example.stproject.models.POI
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class PoiEditDialog(
@@ -21,9 +28,13 @@ class PoiEditDialog(
         val view = inflater.inflate(R.layout.edit_poi, container, false)
 
         val nameInput = view.findViewById<EditText>(R.id.poiName)
+
         val ratingBar = view.findViewById<RatingBar>(R.id.poiRating)
+
         val saveBtn = view.findViewById<Button>(R.id.saveBtn)
-        val imagephoto = view.findViewById<Button>(R.id.imagephoto)
+
+        val imagephoto = view.findViewById<ImageView>(R.id.imagephoto)
+
         val spinner = view.findViewById<Spinner>(R.id.spinnerTypeLieu)
 
         val types = listOf(
@@ -47,8 +58,9 @@ class PoiEditDialog(
 
         spinner.setSelection(0)
 
-        nameInput.setText(poi.name)
-        ratingBar.rating = poi.note
+        nameInput.setText(poi.getTitre())
+
+        ratingBar.rating = poi.getNote().toFloat()
 
         saveBtn.setOnClickListener {
 
@@ -65,9 +77,11 @@ class PoiEditDialog(
                 return@setOnClickListener
             }
 
-            poi.name = nameInput.text.toString()
-            poi.note = ratingBar.rating
-            poi.type = choix
+            poi.setTitre(nameInput.text.toString())
+
+            poi.setNote(ratingBar.rating.toInt())
+
+            poi.setType(choix)
 
             onSave(poi)
 
