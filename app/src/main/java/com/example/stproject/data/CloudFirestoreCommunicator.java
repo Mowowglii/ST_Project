@@ -232,24 +232,24 @@ public class CloudFirestoreCommunicator {
 
     // Partie Photo
     public void ajouter_photo(StorageReference photoRef, String tripId) {
-        // Récupérer les photos du voyage concerné
-        Object unknownObject = db.collection("voyages")
+        // Récupérer la liste des références de photos du voyage concerné
+        @SuppressWarnings("unchecked")
+        List<StorageReference> tripPictures = (List<StorageReference>) db.collection("voyages")
                 .document(tripId)
                 .get()
                 .getResult()
                 .get("listePhotos");
 
-        if (unknownObject instanceof List){
-            @SuppressWarnings("unchecked")
-            List<StorageReference> tripPictures = (List<StorageReference>) unknownObject;
-            // Ajouter la référence de la photo
+        // Ajouter la référence de la photo
+        if (tripPictures != null ) {
             tripPictures.add(photoRef);
-
-            // Mettre à jour le contenu de la liste de photo du voyage
-            db.collection("voyages")
-                    .document(tripId)
-                    .update("listePhotos", tripPictures);
         }
+
+        // Mettre à jour le contenu de la liste de photo du voyage
+        db.collection("voyages")
+                .document(tripId)
+                .update("listePhotos", tripPictures);
+
     }
 
     public void supprimer_liste_photo(List<Photo> liste, PhotoCallback callback) {
