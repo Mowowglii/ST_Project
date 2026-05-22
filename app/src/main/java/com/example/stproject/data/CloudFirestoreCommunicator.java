@@ -4,14 +4,15 @@ import android.location.Location;
 import android.util.Log;
 
 import com.example.stproject.models.POI;
-import com.example.stproject.models.Path;
 import com.example.stproject.models.Photo;
 import com.example.stproject.models.Voyage;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +21,7 @@ import java.util.Map;
 
 public class CloudFirestoreCommunicator {
 
-    private FirebaseFirestore db;
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private List<Voyage> sacvoyage = new ArrayList<>();
     private List<POI> sacpoi = new ArrayList<>();
     private String voyageidnow;
@@ -42,12 +43,8 @@ public class CloudFirestoreCommunicator {
     }
 
     public interface PathCallback {
-        void onComplete(List<Path> path);
+        void onComplete(List<Location> path);
         void onError(String error);
-    }
-
-    public CloudFirestoreCommunicator() {
-        db = FirebaseFirestore.getInstance();
     }
 
     // Partie Voyage
@@ -66,6 +63,24 @@ public class CloudFirestoreCommunicator {
 
     public String recuperer_id_du_voyage() {
         return this.voyageidnow;
+    }
+
+    public String recoverIdFromTripName(String tripName){
+        final String[] docId = new String[1];
+        db.collection("voyages")
+                .whereEqualTo("titre", tripName)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null){
+                        QuerySnapshot querySnapshot = task.getResult();
+                        if (querySnapshot.size() > 1){
+                            Log.e("Firestore","Too much trip has the same name");
+                        } else {
+                            docId[0] = querySnapshot.getDocuments().get(0).getId();
+                        }
+                    }
+                });
+        return docId[0];
     }
 
     public void modification_dun_voyage(String voyageId, String titre, String desc, Integer note) {
@@ -215,17 +230,25 @@ public class CloudFirestoreCommunicator {
     }
 
     // Partie Photo
-    public void ajouter_photo(List<Photo> liste) {
-        int limiteajout = 30;
-        for (int i = 0; i < liste.size(); i += limiteajout) {
-            WriteBatch batch = db.batch();
-            List<Photo> subList = liste.subList(i, Math.min(i + limiteajout, liste.size()));
-            for (Photo p : subList) {
-                DocumentReference ref = db.collection("photos").document();
-                batch.set(ref, p);
-            }
-            batch.commit();
+    public void ajouter_photo(StorageReference photoRef, String tripId) {
+        // Récupérer la liste des références de photos du voyage concerné
+        @SuppressWarnings("unchecked")
+        List<StorageReference> tripPictures = (List<StorageReference>) db.collection("voyages")
+                .document(tripId)
+                .get()
+                .getResult()
+                .get("listePhotos");
+
+        // Ajouter la référence de la photo
+        if (tripPictures != null ) {
+            tripPictures.add(photoRef);
         }
+
+        // Mettre à jour le contenu de la liste de photo du voyage
+        db.collection("voyages")
+                .document(tripId)
+                .update("listePhotos", tripPictures);
+
     }
 
     public void supprimer_liste_photo(List<Photo> liste, PhotoCallback callback) {
@@ -281,10 +304,11 @@ public class CloudFirestoreCommunicator {
     }
 
     // Partie Path
-    public void ajout_path(List<Map<String, Object>> pointsGps) {
+    public void ajout_path(List<Location> pointsGps) {
+        // Ce qui est problématique avec l'attribut voyageidnow c'est que si l'attribut change de valeur pour x ou y raison alors que le suivi en temps réel est actif, les coordonnées GPS seront détournées.
         if (voyageidnow == null) return;
         WriteBatch batch = db.batch();
-        for (Map<String, Object> pt : pointsGps) {
+        for (Location pt : pointsGps) {
             DocumentReference ref = db.collection("voyages").document(voyageidnow).collection("path").document();
             batch.set(ref, pt);
         }
@@ -294,9 +318,9 @@ public class CloudFirestoreCommunicator {
     public void recuperer_path_voyage(String voyageId, PathCallback callback) {
         db.collection("voyages").document(voyageId).collection("path").get()
                 .addOnSuccessListener(docs -> {
-                    List<Path> path = new ArrayList<>();
+                    List<Location> path = new ArrayList<>();
                     for (DocumentSnapshot d : docs) {
-                        Path p = d.toObject(Path.class);
+                        Location p = d.toObject(Location.class);
                         if (p != null) path.add(p);
                     }
                     callback.onComplete(path);
