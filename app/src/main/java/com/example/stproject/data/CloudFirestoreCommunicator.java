@@ -11,7 +11,9 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +22,7 @@ import java.util.Map;
 
 public class CloudFirestoreCommunicator {
 
-    private FirebaseFirestore db;
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private List<Voyage> sacvoyage = new ArrayList<>();
     private List<POI> sacpoi = new ArrayList<>();
     private String voyageidnow;
@@ -46,10 +48,6 @@ public class CloudFirestoreCommunicator {
         void onError(String error);
     }
 
-    public CloudFirestoreCommunicator() {
-        db = FirebaseFirestore.getInstance();
-    }
-
     // Partie Voyage
     public void ajout_d_un_voyage(String nomVoyage) {
         String uniqueID = db.collection("voyages").document().getId();
@@ -66,6 +64,24 @@ public class CloudFirestoreCommunicator {
 
     public String recuperer_id_du_voyage() {
         return this.voyageidnow;
+    }
+
+    public String recoverIdFromTripName(String tripName){
+        final String[] docId = new String[1];
+        db.collection("voyages")
+                .whereEqualTo("titre", tripName)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null){
+                        QuerySnapshot querySnapshot = task.getResult();
+                        if (querySnapshot.size() > 1){
+                            Log.e("Firestore","Too much trip has the same name");
+                        } else {
+                            docId[0] = querySnapshot.getDocuments().get(0).getId();
+                        }
+                    }
+                });
+        return docId[0];
     }
 
     public void modification_dun_voyage(String voyageId, String titre, String desc, Integer note) {
@@ -215,16 +231,24 @@ public class CloudFirestoreCommunicator {
     }
 
     // Partie Photo
-    public void ajouter_photo(List<Photo> liste) {
-        int limiteajout = 30;
-        for (int i = 0; i < liste.size(); i += limiteajout) {
-            WriteBatch batch = db.batch();
-            List<Photo> subList = liste.subList(i, Math.min(i + limiteajout, liste.size()));
-            for (Photo p : subList) {
-                DocumentReference ref = db.collection("photos").document();
-                batch.set(ref, p);
-            }
-            batch.commit();
+    public void ajouter_photo(StorageReference photoRef, String tripId) {
+        // Récupérer les photos du voyage concerné
+        Object unknownObject = db.collection("voyages")
+                .document(tripId)
+                .get()
+                .getResult()
+                .get("listePhotos");
+
+        if (unknownObject instanceof List){
+            @SuppressWarnings("unchecked")
+            List<StorageReference> tripPictures = (List<StorageReference>) unknownObject;
+            // Ajouter la référence de la photo
+            tripPictures.add(photoRef);
+
+            // Mettre à jour le contenu de la liste de photo du voyage
+            db.collection("voyages")
+                    .document(tripId)
+                    .update("listePhotos", tripPictures);
         }
     }
 
