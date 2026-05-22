@@ -1,0 +1,83 @@
+package com.example.stproject.models;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.location.Location;
+
+public class Voyage {
+
+    private String id;
+    private String titre;
+    private String description;
+    private Integer note;
+    private List<POI> listePois;
+    private List<String> photo_paths;
+    private List<Location> path;
+
+    public Voyage() {}
+
+    public Voyage(String id, String titre, String description, Integer note,
+                   List<POI> listePois, List<String> photo_paths,List<Location> path) {
+        this.id = id;
+        this.titre = titre;
+        this.description = description;
+        this.note = note;
+        this.listePois = listePois;
+        this.photo_paths = photo_paths;
+        this.path = path;
+    }
+
+    
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getTitre() {
+        return titre;
+    }
+
+    public void setTitre(String titre) {
+        this.titre = titre;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Integer getNote() {
+        return note;
+    }
+
+    public void setNote(Integer note) {
+        this.note = note;
+    }
+
+    public List<POI> getListePois() {
+        return listePois;
+    }
+
+    public void setListePois(List<POI> listePois) {
+        this.listePois = listePois;
+    }
+
+    public List<Photo> getListePhotos() {
+        return listePhotos;
+    }
+
+    public void setphoto_paths(List<String> photo_paths) {
+        this.photo_paths = photo_paths;
+    }
+
+    public List<Location> getPath() {
+        return this.path;
+     }
+    
+}
