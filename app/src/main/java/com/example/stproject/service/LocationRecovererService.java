@@ -27,6 +27,7 @@ import com.google.android.gms.location.Priority;
 import java.util.Objects;
 
 public class LocationRecovererService extends Service {
+
     /* Définir l'id du channel pour la notification */
     private static final String CHANNEL_ID = "location_service_channel";
 
@@ -99,6 +100,10 @@ public class LocationRecovererService extends Service {
             case "ACTION_PAUSE" :
                 this.pauseTracking();
                 break;
+
+            case "ACTION_STOP":
+                stopSelf();
+                break;//pour permettre l'arret du service
         }
 
         return START_STICKY; /* Tout est bon, on peut dire à l'OS de garder le service en vie */
