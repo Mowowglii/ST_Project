@@ -364,10 +364,12 @@ public class CloudFirestoreCommunicator {
     // Partie Path
     public void ajout_path(List<Location> pointsGps) {
         // Ce qui est problématique avec l'attribut voyageidnow c'est que si l'attribut change de valeur pour x ou y raison alors que le suivi en temps réel est actif, les coordonnées GPS seront détournées.
-        if (voyageidnow == null) return;
+        // idVoyageEnCours cree pour eviter le soucis merci de l avoir remarque
+        if (idVoyageEnCours == null)
+            return;
         WriteBatch batch = db.batch();
         for (Location pt : pointsGps) {
-            DocumentReference ref = db.collection("voyages").document(voyageidnow).collection("path").document();
+            DocumentReference ref = db.collection("voyages").document(idVoyageEnCours).collection("path").document();
             batch.set(ref, pt);
         }
         batch.commit();
