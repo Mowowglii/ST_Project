@@ -231,7 +231,6 @@ public class CloudFirestoreCommunicator {
 
     // Partie Photo
     public void ajouter_photo(StorageReference photoRef, String tripId) {
-        // Récupérer la liste des références de photos du voyage concerné
         @SuppressWarnings("unchecked")
         List<StorageReference> tripPictures = (List<StorageReference>) db.collection("voyages")
                 .document(tripId)
@@ -239,12 +238,10 @@ public class CloudFirestoreCommunicator {
                 .getResult()
                 .get("listePhotos");
 
-        // Ajouter la référence de la photo
         if (tripPictures != null ) {
             tripPictures.add(photoRef);
         }
 
-        // Mettre à jour le contenu de la liste de photo du voyage
         db.collection("voyages")
                 .document(tripId)
                 .update("listePhotos", tripPictures);
@@ -256,7 +253,6 @@ public class CloudFirestoreCommunicator {
             callback.onSuccess();
             return;
         }
-        // Logic to delete from Storage should go here, but for now we just call success
         callback.onSuccess();
     }
 
