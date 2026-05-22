@@ -6,7 +6,7 @@ import android.net.Uri;
 public class Photo {
     private StorageReference photoRef;
     private Uri imageURI;
-    private String associatedTrip;
+    private String associatedTripId;
     private POI associatedPOI;
     private double latitude;
     private double longitude;
@@ -36,11 +36,11 @@ public class Photo {
     }
 
     public String getAssociatedTrip() {
-        return associatedTrip;
+        return associatedTripId;
     }
 
     public void setAssociatedTrip(String associatedTrip) {
-        this.associatedTrip = associatedTrip;
+        this.associatedTripId = associatedTrip;
     }
 
     public POI getAssociatedPOI() {
