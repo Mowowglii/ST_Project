@@ -1,8 +1,9 @@
 package com.example.stproject
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.content.Intent
+//import android.os.Handler
+//import android.os.Looper
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.Toast
@@ -12,8 +13,9 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
+//import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import com.example.stproject.service.LocationRecovererService
 
 class Carte : AppCompatActivity() {
 
@@ -25,19 +27,19 @@ class Carte : AppCompatActivity() {
     private var tripState = TripState.IDLE
 
     // Liste des points GPS enregistrés pendant le trajet
-    private val trackingPoints = mutableListOf<GeoPoint>()
+//    private val trackingPoints = mutableListOf<GeoPoint>()
 
     // Liste des points d'intérêt (POI) ajoutés par l'utilisateur
     private val poiList = mutableListOf<POI>()
 
     // Ligne représentant le trajet sur la carte
-    private var routeLine: Polyline? = null
+//    private var routeLine: Polyline? = null
 
     // Dernier point enregistré avant une pause du trajet
-    private var lastPointBeforePause: GeoPoint? = null
+//    private var lastPointBeforePause: GeoPoint? = null
 
     // Handler utilisé pour exécuter un suivi GPS périodique
-    private val handler = Handler(Looper.getMainLooper())
+//    private val handler = Handler(Looper.getMainLooper())
 
     // Mathushan :
     private var tripId : String? = null
@@ -74,6 +76,12 @@ class Carte : AppCompatActivity() {
         initButtons()
     }
 
+    private fun sendLocationServiceAction(action : String) {
+        val intent = Intent(this, LocationRecovererService::class.java)
+        intent.action = action
+        startService(intent)
+    }
+
     // Initialisation de la localisation GPS utilisateur
     private fun setupGPS() {
         locationOverlay = MyLocationNewOverlay(map)
@@ -95,9 +103,9 @@ class Carte : AppCompatActivity() {
     // Démarrage d’un nouveau trajet
     private fun startTrip() {
         tripState = TripState.RUNNING
-        trackingPoints.clear()
+//        trackingPoints.clear()
 
-        startTrackingLoop()
+//        startTrackingLoop()
         Toast.makeText(this, "Voyage démarré", Toast.LENGTH_SHORT).show()
     }
 
@@ -130,51 +138,52 @@ class Carte : AppCompatActivity() {
     // Arrêt du trajet
     private fun stopTrip() {
         tripState = TripState.IDLE
+        stopService(Intent(this, LocationRecovererService::class.java))
     }
 
     // Boucle de suivi GPS toutes les 3 secondes
-    private fun startTrackingLoop() {
-        handler.post(object : Runnable {
-            override fun run() {
-
-                if (tripState == TripState.RUNNING) {
-
-                    locationOverlay.myLocation?.let { loc ->
-                        val point = GeoPoint(loc.latitude, loc.longitude)
-
-                        trackingPoints.add(point)
-                        drawRoute()
-                    }
-                }
-
-                handler.postDelayed(this, 3000)
-            }
-        })
-    }
+//    private fun startTrackingLoop() {
+//        handler.post(object : Runnable {
+//            override fun run() {
+//
+//                if (tripState == TripState.RUNNING) {
+//
+//                    locationOverlay.myLocation?.let { loc ->
+//                        val point = GeoPoint(loc.latitude, loc.longitude)
+//
+//                        trackingPoints.add(point)
+//                        drawRoute()
+//                    }
+//                }
+//
+//                handler.postDelayed(this, 3000)
+//            }
+//        })
+//    }
 
     // Dessine le trajet complet sur la carte
-    private fun drawRoute() {
-        routeLine?.let { map.overlays.remove(it) }
-
-        routeLine = Polyline().apply {
-            setPoints(trackingPoints)
-            outlinePaint.strokeWidth = 6f
-        }
-
-        map.overlays.add(routeLine)
-        map.invalidate()
-    }
+//    private fun drawRoute() {
+//        routeLine?.let { map.overlays.remove(it) }
+//
+//        routeLine = Polyline().apply {
+//            setPoints(trackingPoints)
+//            outlinePaint.strokeWidth = 6f
+//        }
+//
+//        map.overlays.add(routeLine)
+//        map.invalidate()
+//    }
 
     // Dessine une ligne en pointillés entre deux positions
-    private fun drawDashedLine(start: GeoPoint, end: GeoPoint) {
-        val dashedLine = Polyline().apply {
-            setPoints(listOf(start, end))
-            outlinePaint.strokeWidth = 6f
-        }
-
-        map.overlays.add(dashedLine)
-        map.invalidate()
-    }
+//    private fun drawDashedLine(start: GeoPoint, end: GeoPoint) {
+//        val dashedLine = Polyline().apply {
+//            setPoints(listOf(start, end))
+//            outlinePaint.strokeWidth = 6f
+//        }
+//
+//        map.overlays.add(dashedLine)
+//        map.invalidate()
+//    }
 
     // Ajout d’un point d’intérêt sur la carte
     private fun addPOI() {
@@ -200,6 +209,7 @@ class Carte : AppCompatActivity() {
         }
 
         findViewById<ImageButton>(R.id.btnStart).setOnClickListener {
+            sendLocationServiceAction("ACTION_START")
             if (tripState == TripState.PAUSED) {
                 showResumeDialog()
             } else {
@@ -208,10 +218,12 @@ class Carte : AppCompatActivity() {
         }
 
         findViewById<ImageButton>(R.id.btnPause).setOnClickListener {
+            sendLocationServiceAction("ACTION_PAUSE")
             pauseTrip()
         }
 
         findViewById<ImageButton>(R.id.btnStop).setOnClickListener {
+            stopTrip()
             showStopDialog()
         }
     }
@@ -262,7 +274,7 @@ class Carte : AppCompatActivity() {
 
         btnDelete.setOnClickListener {
             stopTrip()
-            trackingPoints.clear()
+//            trackingPoints.clear()
             map.overlays.clear()
             map.overlays.add(locationOverlay)
             map.invalidate()
