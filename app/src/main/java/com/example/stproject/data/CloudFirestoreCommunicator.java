@@ -58,9 +58,6 @@ public class CloudFirestoreCommunicator {
     }
 
     public void ajout_d_un_voyage(Voyage nouveauvoyage) {
-
-
-
         db.collection("voyages")
                 .document(idVoyageEnCours)
                 .set(nouveauvoyage)
@@ -70,6 +67,22 @@ public class CloudFirestoreCommunicator {
                     Log.e("Firestore", "Erreur ajout voyage : " + e.getMessage());
 
                 });
+    }
+    public interface NomVoyageCallback {
+        void onResult(boolean existe);
+        void onError(String erreur);
+    }
+
+    public void verifierNomVoyageExiste(String titre, NomVoyageCallback callback) {
+        db.collection("voyages")
+                .whereEqualTo("titre", titre)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    boolean existe = !queryDocumentSnapshots.isEmpty();
+                    callback.onResult(existe);
+                })
+                .addOnFailureListener(e ->
+                        callback.onError(e.getMessage()));
     }
 
     public String recuperer_id_du_voyage() {
