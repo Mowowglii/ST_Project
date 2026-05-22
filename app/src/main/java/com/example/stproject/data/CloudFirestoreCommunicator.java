@@ -51,48 +51,26 @@ public class CloudFirestoreCommunicator {
 
     // Partie Voyage
 
-    public void ajout_d_un_voyage(String nomVoyage) {
-        db.collection("voyages").get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int maxNumero = 0;
-                    boolean titreexact = false;
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        String titredanslabase = doc.getString("titre");
-                        if (titredanslabase == null) 
-                            continue;
-                        if (titredanslabase.equals(nomVoyage)) {
-                            titreexact = true;
-                        } 
-                        else if (titredanslabase.startsWith(nomVoyage + "_")) {
-                            int dernierTiret = titredanslabase.lastIndexOf("_");
-                            if (dernierTiret != -1) {
-                                String chiffreStr = titredanslabase.substring(dernierTiret + 1);
-                                    try {
-                                        int numero = Integer.parseInt(chiffreStr);
-                                        if (numero > maxNumero) {
-                                        maxNumero = numero;
-                                        }
-                                }   catch (NumberFormatException e) {
-                            }
-                        }
-                    }
-                }
-                String titreFinal = nomVoyage;
-                if (titreexact) {
-                    titreFinal = nomVoyage + "_" + (maxNumero + 1);
-                }
-                String uniqueID = db.collection("voyages").document().getId();
-                Voyage nouveauVoyage = new Voyage();
-                nouveauVoyage.setId(uniqueID);
-                nouveauVoyage.setTitre(titreFinal);
-                nouveauVoyage.setDescription("");
-                nouveauVoyage.setNote(0);
-                db.collection("voyages").document(uniqueID).set(nouveauVoyage)
-                        .addOnSuccessListener(aVoid -> this.voyageidnow = uniqueID)
-                        .addOnFailureListener(e -> Log.e("Firestore", "Erreur création voyage: " + e.getMessage()));
-            })
-            .addOnFailureListener(e -> Log.e("Firestore", "Erreur récupération voyages: " + e.getMessage()));
-}
+    public String cleUnique() {
+        return db.collection("voyages")
+                .document()
+                .getId();
+    }
+
+    public void ajout_d_un_voyage(Voyage nouveauvoyage) {
+
+
+
+        db.collection("voyages")
+                .document(idVoyageEnCours)
+                .set(nouveauvoyage)
+                .addOnSuccessListener(aVoid ->
+                        Log.d("Firestore", "Voyage ajouté avec succès"))
+                .addOnFailureListener(e -> {
+                    Log.e("Firestore", "Erreur ajout voyage : " + e.getMessage());
+
+                });
+    }
 
     public String recuperer_id_du_voyage() {
         return this.voyageidnow;
