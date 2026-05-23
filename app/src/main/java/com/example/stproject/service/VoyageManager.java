@@ -4,6 +4,7 @@ import com.example.stproject.data.CloudFirestoreCommunicator;
 import com.example.stproject.models.Voyage;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class VoyageManager {
 
@@ -85,5 +86,26 @@ public class VoyageManager {
     // Retourne le voyage courant
     public Voyage getCurrentVoyage() {
         return currentVoyage;
+    }
+
+    // Chargement des voyages:
+
+    public interface ListeVoyagesCallback {
+        void onSuccess(List<Voyage> voyages);
+        void onError(String message);
+    }
+
+    public void recupererTousLesVoyages(ListeVoyagesCallback callback) {
+        cfCommunicator.tous_les_voyages(new CloudFirestoreCommunicator.VoyageCallback() {
+            @Override
+            public void onComplete(List<Voyage> voyages) {
+                callback.onSuccess(voyages);
+            }
+
+            @Override
+            public void onError (String error) {
+                callback.onError((error));
+            }
+        });
     }
 }
