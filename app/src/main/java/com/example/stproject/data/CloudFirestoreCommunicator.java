@@ -121,8 +121,8 @@ public class CloudFirestoreCommunicator {
     public void ajout_poi(POI nouveauPoi) {
         if (voyageidnow != null) {
             nouveauPoi.setIdVoyage(voyageidnow);
-            String documentIdUnique = nouveauPoi.getLatitude() + "_" + nouveauPoi.getLongitude();
-            db.collection("voyages").document(voyageidnow).collection("pois")..document(documentIdUnique).set(nouveauPoi);
+            String documentIdUnique = nouveauPoi.getLatitude() + "_" + nouveauPoi.getLongitude()+"_"+voyageidnow;
+            db.collection("voyages").document(voyageidnow).collection("pois").document(documentIdUnique).set(nouveauPoi);
         }
     }
 
