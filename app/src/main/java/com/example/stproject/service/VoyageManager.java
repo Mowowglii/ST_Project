@@ -63,6 +63,7 @@ public class VoyageManager {
 
                         // Définit le voyage courant
                         currentVoyageId = id;
+                        cfCommunicator.demarrerNouveauVoyage(currentVoyageId);
 
                         // Sauvegarde dans Firestore
                         cfCommunicator.ajout_d_un_voyage(currentVoyage);
