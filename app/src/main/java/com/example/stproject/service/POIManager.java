@@ -3,6 +3,7 @@ package com.example.stproject.service;
 import com.example.stproject.data.CloudFirestoreCommunicator;
 import com.example.stproject.models.POI;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class POIManager {
@@ -49,5 +50,59 @@ public class POIManager {
         cfCommunicator.demarrerNouveauVoyage(voyageid);
     }
 
+    public void modifierPOI(POI ancien, String nouveauTitre, String nouvelleDescription, String nouveauType, Integer nouvellenote, AjoutPOICallback callback) {
+        if (ancien == null) {
+            callback.onError("Aucun POI sélectionné");
+            return;
+        }
+        if (nouveauTitre != null && nouveauTitre.trim().isEmpty()) {
+            callback.onError("Le titre du POI ne peut pas être vide");
+            return;
+        }
 
+        cfCommunicator.modification_dun_poi(ancien,
+                nouveauTitre != null ? nouveauTitre.trim() : null,
+                nouvelleDescription,
+                nouveauType,
+                nouvellenote,
+                new CloudFirestoreCommunicator.POICallback() {
+                    @Override
+                    public void onComplete(List<POI> pois) {
+                        if (nouveauTitre != null) ancien.setTitre(nouveauTitre.trim());
+                        if (nouvelleDescription != null) ancien.setDescription(nouvelleDescription);
+                        if (nouveauType != null) ancien.setType(nouveauType);
+                        if (nouvellenote != null) ancien.setNote(nouvellenote);
+                        callback.onSuccess(ancien);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
+    }
+
+    public void supprimerPOI(POI poi, AjoutPOICallback callback) {
+        if (poi == null) {
+            callback.onError("Aucun POI sélectionné");
+            return;
+        }
+        List<POI> poisASupprimer = new ArrayList<>();
+        poisASupprimer.add(poi);
+        cfCommunicator.supp_poi(
+                poisASupprimer,
+                new CloudFirestoreCommunicator.POICallback() {
+                    @Override
+                    public void onComplete(List<POI> pois) {
+                        callback.onSuccess(poi);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
+    }
 }

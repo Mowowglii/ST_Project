@@ -220,6 +220,9 @@ class Carte : AppCompatActivity() {
                         )
 
                         marker.title = poi.titre
+                        // avant le poi ne contenait que le titre mais maintenant ça contient l'objet POI.
+                        marker.relatedObject = poi
+                        configurerClickMarker(marker)
 
                         map.overlays.add(marker)
                         map.invalidate()
@@ -248,6 +251,117 @@ class Carte : AppCompatActivity() {
         ).show()
     }
 
+
+
+    private fun configurerClickMarker(marker: Marker) {
+        marker.setOnMarkerClickListener { clickedMarker, _ ->
+            val poiClique = clickedMarker.relatedObject as? POI
+            if (poiClique != null) {
+                showDetailsPOIDialog(poiClique, clickedMarker)
+            }
+            true
+        }
+    }
+
+    private fun showModifierPOIDialog(poi: POI, marker: Marker) {
+
+        val input = android.widget.EditText(this)
+
+        input.hint = "Nouveau titre"
+        input.setText(poi.titre)
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Modifier le POI")
+            .setView(input)
+
+            .setPositiveButton("Modifier") { _, _ ->
+
+                val nouveauTitre = input.text.toString().trim()
+
+                poiManager.modifierPOI(
+                    poi,
+                    nouveauTitre,
+                    null,
+                    null,
+                    null,
+
+                    object : POIManager.AjoutPOICallback {
+
+                        override fun onSuccess(poiModifie: POI) {
+
+                            marker.title = poiModifie.titre
+                            marker.relatedObject = poiModifie
+
+                            map.invalidate()
+
+                            Toast.makeText(
+                                this@Carte,
+                                "POI modifié",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        override fun onError(message: String) {
+
+                            Toast.makeText(
+                                this@Carte,
+                                message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                )
+            }
+
+            .setNegativeButton("Annuler", null)
+
+            .show()
+    }
+
+    private fun supprimerPOI(poi : POI, marker: Marker) {
+        poiManager.supprimerPOI(
+            poi,
+            object : POIManager.AjoutPOICallback {
+                override fun onSuccess(poi: POI) {
+                    map.overlays.remove(marker)
+                    map.invalidate()
+
+                    Toast.makeText(this@Carte,
+                        "POI supprimé",
+                        Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onError(message: String) {
+                    Toast.makeText(this@Carte,
+                        message,
+                        Toast.LENGTH_SHORT).show()
+
+                }
+            }
+        )
+    }
+    private fun showDetailsPOIDialog(poi: POI, marker: Marker) {
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(poi.titre)
+            .setMessage(
+                "Description : ${poi.description}\n" +
+                        "Note : ${poi.note}\n" +
+                        "Type : ${poi.type}"
+            )
+
+            .setPositiveButton("Modifier") { _, _ ->
+                showModifierPOIDialog(poi, marker)
+            }
+
+            .setNegativeButton("Supprimer") { _, _ ->
+                supprimerPOI(poi, marker)
+            }
+
+            .setNeutralButton("Fermer", null)
+
+            .show()
+    }
 //    private fun addPOI() {
 //        locationOverlay.myLocation?.let { loc ->
 //
