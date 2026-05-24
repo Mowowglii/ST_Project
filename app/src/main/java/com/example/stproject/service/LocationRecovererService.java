@@ -24,8 +24,13 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
-
-import java.util.Objects;
+/* import olivier a verifier  */
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.example.stproject.service.reductionlistepoint;
+import android.location.Location;
 
 public class LocationRecovererService extends Service {
     /* Définir l'id du channel pour la notification */
@@ -33,7 +38,9 @@ public class LocationRecovererService extends Service {
 
     /* Définir l'id de la notification */
     private static final int NOTIFICATION_ID = 1;
-
+    
+    private static Location dernierpoint = null;
+    
     private FusedLocationProviderClient flpClient;
 
     private LocationRequest locationReq;
@@ -59,7 +66,33 @@ public class LocationRecovererService extends Service {
         @Override
         public void onLocationResult(@NonNull LocationResult result){
             /* Je vais utiliser la fonction qu'Olivier va créer pour upload le résultat de la requête (batch de localisation) dans la DB. */
-            cloudFirestoreCommunicator.ajout_path(result.getLocations());
+            /*cloudFirestoreCommunicator.ajout_path(result.getLocations());*/
+            /*preparation d une liste a traiter  */
+            List<Location> pointatraite = new ArrayList<>();
+            /*ajout du dernier points pour une continuité entre chaque ajout */
+            if ( dernierpoint !=null){
+                pointatraite.add(dernierpoint);
+            }
+            /* on ajoute le nouveau paquet de points  */
+            List<Location> touslespoints = result.getLocations();
+            pointatraite.addAll(touslespoints);
+            /* on recupere le nouveau dernier point  */
+            dernierpoint=pointatraite.get(pointatraite.size()-1);
+            /* on reduit la liste grace a notre algo douglasPeucker */
+            List<Location> pointreduit = reductionlistepoint.douglasPeucker(pointatraite);
+            /* firestore je prend pas d object lourd donc on ajoute les donnees dans une liste d hasmap  */
+            List<Map<String, Object>> pointaenvoyer = new ArrayList<>();
+            for (int i = 0; i < pointreduit.size() - 1; i++){
+                Location localisation=pointreduit.get(i);
+                if (localisation !=null){
+                    Map<String,Object>point=new HashMap<>();
+                    point.put("latitude",localisation.getLatitude());
+                    point.put("longitude",localisation.getLongitude());
+                    pointaenvoyer.add(point);
+                }
+                
+            }
+            cloudFirestoreCommunicator.ajout_path(pointaenvoyer);
         }
     }
 
