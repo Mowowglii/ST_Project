@@ -18,31 +18,8 @@
         android:paddingStart="12dp"
         android:paddingEnd="12dp">
 
-        <!-- 🔙 RETOUR -->
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:clickable="true"
-            android:contentDescription="Retour"
-            android:focusable="true"
-            android:src="@drawable/ic_arrow_back" />
 
-        <!-- ESPACE -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
 
-        <!-- ☑️ SÉLECTION -->
-        <ImageView
-            android:id="@+id/btnSelectMode"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:clickable="true"
-            android:contentDescription="Sélection photos"
-            android:focusable="true"
-            android:src="@drawable/ic_check" />
 
     </LinearLayout>
 
@@ -57,21 +34,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- 🏷️ NOM -->
+            <!--  NOM -->
             <EditText
                 android:id="@+id/poiName"
                 android:hint="Nom du POI"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
-            <!-- 📌 TYPE -->
+            <!--  TYPE -->
             <Spinner
                 android:id="@+id/spinnerTypeLieu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"/>
 
-            <!-- ⭐ NOTE -->
+            <!--  NOTE -->
             <RatingBar
                 android:id="@+id/poiRating"
                 android:numStars="5"
@@ -80,7 +57,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"/>
 
-            <!-- 📝 DESCRIPTION -->
+            <!--  DESCRIPTION -->
             <EditText
                 android:id="@+id/poiReview"
                 android:hint="Description..."
@@ -97,7 +74,7 @@
                 android:layout_height="250dp"
                 android:layout_marginTop="12dp"/>
 
-            <!-- ➕ AJOUT Photo -->
+            <!--  AJOUT Photo -->
             <ImageView
                 android:id="@+id/imagephoto"
                 android:layout_width="60dp"
@@ -112,7 +89,7 @@
 
     </ScrollView>
 
-    <!-- 💾 BOUTON SAUVEGARDE -->
+    <!--  BOUTON SAUVEGARDE -->
     <Button
         android:id="@+id/saveBtn"
         android:text="Sauvegarder POI"

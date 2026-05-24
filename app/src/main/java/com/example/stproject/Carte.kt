@@ -1,13 +1,26 @@
 package com.example.stproject
 
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.MotionEvent
+import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.stproject.models.POI
+import com.example.stproject.models.Photo
+import com.example.stproject.service.LocationRecovererService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
@@ -15,11 +28,6 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-
-// Imports utilisés pour lancer et contrôler le service de tracking
-import android.content.Intent
-import androidx.core.content.ContextCompat
-import com.example.stproject.service.LocationRecovererService
 
 class Carte : AppCompatActivity() {
 
@@ -50,6 +58,9 @@ class Carte : AppCompatActivity() {
     // Handler utilisé pour répéter les mises à jour GPS
     private val handler = Handler(Looper.getMainLooper())
 
+    private var tripId: String? = null
+    private var tripName: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -60,6 +71,9 @@ class Carte : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_carte)
+
+        tripId = intent.getStringExtra("tripId")
+        tripName = intent.getStringExtra("trip_name")
 
         // Récupération de la carte dans le layout
         map = findViewById(R.id.map)
@@ -127,6 +141,8 @@ class Carte : AppCompatActivity() {
         startTrackingLoop()
 
         Toast.makeText(this, "Voyage démarré", Toast.LENGTH_SHORT).show()
+
+        updateTripStatus()
     }
 
     private fun pauseTrip() {
@@ -143,6 +159,8 @@ class Carte : AppCompatActivity() {
         startService(serviceIntent)
 
         Toast.makeText(this, "Voyage en pause", Toast.LENGTH_SHORT).show()
+
+        updateTripStatus()
     }
 
     private fun resumeTrip() {
@@ -168,6 +186,8 @@ class Carte : AppCompatActivity() {
         startTrackingLoop()
 
         Toast.makeText(this, "Voyage repris", Toast.LENGTH_SHORT).show()
+
+        updateTripStatus()
     }
 
     private fun stopTrip() {
@@ -179,6 +199,37 @@ class Carte : AppCompatActivity() {
         val serviceIntent = Intent(this, LocationRecovererService::class.java)
         serviceIntent.action = "ACTION_STOP"
         startService(serviceIntent)
+
+        updateTripStatus()
+    }
+
+    private fun goToHome() {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+        finish()
+    }
+
+    private fun updateTripStatus() {
+        val statusText = findViewById<TextView>(R.id.tripStatusText)
+        val btnStart = findViewById<ImageButton>(R.id.btnStart)
+
+        when (tripState) {
+            TripState.IDLE -> {
+                statusText.text = "Prêt"
+                btnStart.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            }
+
+            TripState.RUNNING -> {
+                statusText.text = "● Enregistrement en cours"
+                btnStart.setBackgroundColor(android.graphics.Color.parseColor("#C8E6C9"))
+            }
+
+            TripState.PAUSED -> {
+                statusText.text = "Pause"
+                btnStart.setBackgroundColor(android.graphics.Color.parseColor("#FFE0B2"))
+            }
+        }
     }
 
     private fun startTrackingLoop() {
@@ -222,7 +273,10 @@ class Carte : AppCompatActivity() {
             setPoints(trackingPoints)
 
             // Épaisseur de la ligne
-            outlinePaint.strokeWidth = 6f
+            outlinePaint.strokeWidth = 14f
+            outlinePaint.color = android.graphics.Color.parseColor("#7E57C2")
+            outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+            outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
         }
 
         // Ajout de la ligne à la carte
@@ -239,10 +293,52 @@ class Carte : AppCompatActivity() {
 
             setPoints(listOf(start, end))
 
-            outlinePaint.strokeWidth = 6f
+            outlinePaint.strokeWidth = 10f
+            outlinePaint.color = android.graphics.Color.GRAY
+            outlinePaint.alpha = 180
+            outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
         }
 
         map.overlays.add(dashedLine)
+
+        map.invalidate()
+    }
+
+    private fun afficherPoiSurCarte(poi: POI) {
+
+        val marker = Marker(map)
+
+        marker.position = GeoPoint(
+            poi.latitude,
+            poi.longitude
+        )
+
+        marker.title = poi.titre
+
+        marker.icon = ContextCompat.getDrawable(
+            this,
+            R.drawable.ic_poi_marker
+        )
+
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+
+        map.overlays.add(marker)
+
+        map.invalidate()
+    }
+
+    private fun afficherPhotoSurCarte(photo: Photo) {
+
+        val marker = Marker(map)
+
+        marker.position = GeoPoint(
+            photo.latitude,
+            photo.longitude
+        )
+
+        marker.title = "Photo"
+
+        map.overlays.add(marker)
 
         map.invalidate()
     }
@@ -261,30 +357,74 @@ class Carte : AppCompatActivity() {
                 "autre"
             )
 
-            // Ajout du POI dans la liste
-            poiList.add(poi)
+            PoiEditDialog(poi) { updatedPoi ->
 
-            // Création du marqueur sur la carte
-            val marker = Marker(map)
+                poiList.add(updatedPoi)
 
-            // Position du marqueur
-            marker.position = GeoPoint(
-                poi.latitude,
-                poi.longitude
-            )
+                afficherPoiSurCarte(updatedPoi)
 
-            // Nom affiché lors du clic sur le marqueur
-            marker.title = poi.titre
-
-            // Ajout du marqueur sur la carte
-            map.overlays.add(marker)
-
-            // Rafraîchissement de la carte
-            map.invalidate()
+            }.show(supportFragmentManager, "PoiEditDialog")
         }
     }
 
     private fun initButtons() {
+
+        val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
+        val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
+        val menuTitle = findViewById<TextView>(R.id.menuTitle)
+
+        menuRecyclerView.layoutManager = LinearLayoutManager(this)
+
+        findViewById<ImageView>(R.id.imageMenu).setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
+
+        findViewById<TextView>(R.id.tabPoi).setOnClickListener {
+            menuTitle.text = "Mes POI"
+            menuRecyclerView.adapter = SuggestionsAdapter(
+                poiList.map { it.titre }
+            ) { selectedPoi ->
+                Toast.makeText(this, selectedPoi, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        findViewById<TextView>(R.id.tabPhotos).setOnClickListener {
+            menuTitle.text = "Mes Photos"
+            menuRecyclerView.adapter = SuggestionsAdapter(
+                listOf("Photos à charger depuis le backend")
+            ) { selectedPhoto ->
+                Toast.makeText(this, selectedPhoto, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val controlPanel = findViewById<LinearLayout>(R.id.controlPanel)
+
+        controlPanel.setOnTouchListener(object : View.OnTouchListener {
+
+            private var dX = 0f
+            private var dY = 0f
+
+            override fun onTouch(view: View, event: MotionEvent): Boolean {
+
+                when (event.action) {
+
+                    MotionEvent.ACTION_DOWN -> {
+                        dX = view.x - event.rawX
+                        dY = view.y - event.rawY
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        view.animate()
+                            .x(event.rawX + dX)
+                            .y(event.rawY + dY)
+                            .setDuration(0)
+                            .start()
+                    }
+                }
+
+                return true
+            }
+        })
 
         // Bouton d'ajout de POI ou photo
         findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener {
@@ -371,6 +511,8 @@ class Carte : AppCompatActivity() {
             Toast.makeText(this, "Voyage terminé", Toast.LENGTH_SHORT).show()
 
             dialog.dismiss()
+
+            goToHome()
         }
 
         // Supprime complètement le trajet
@@ -389,6 +531,8 @@ class Carte : AppCompatActivity() {
             Toast.makeText(this, "Voyage supprimé", Toast.LENGTH_SHORT).show()
 
             dialog.dismiss()
+
+            goToHome()
         }
 
         // Ferme simplement la fenêtre

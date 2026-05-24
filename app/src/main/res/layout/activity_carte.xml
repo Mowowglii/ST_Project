@@ -9,12 +9,12 @@
     android:layout_height="match_parent"
     tools:context=".Carte">
 
-    <!-- 🗺️ MAP -->
+    <!-- Carte -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- ☰ MENU -->
+        <!--  MENU -->
         <org.osmdroid.views.MapView
             android:id="@+id/map"
             android:layout_width="0dp"
@@ -33,12 +33,13 @@
             android:src="@drawable/ic_menu"
             android:background="#CC222222"
             android:padding="8dp"
+            android:contentDescription="Ouvrir le menu"
             app:tint="@android:color/white"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_margin="16dp"/>
 
-        <!-- ▶ START -->
+        <!--  START -->
         <LinearLayout
             android:id="@+id/controlPanel"
             android:layout_width="0dp"
@@ -52,41 +53,54 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_margin="16dp">
 
-            <!-- ▶ START -->
+            <TextView
+                android:id="@+id/tripStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Prêt"
+                android:textColor="@android:color/black"
+                android:textSize="13sp"
+                android:layout_marginEnd="12dp" />
+
+            <!-- START -->
             <ImageButton
                 android:id="@+id/btnStart"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/ic_play"
                 android:background="@android:color/transparent"
+                android:contentDescription="Démarrer le voyage"
                 app:tint="@android:color/black"/>
 
-            <!-- ⏸ PAUSE -->
+            <!--  PAUSE -->
             <ImageButton
                 android:id="@+id/btnPause"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/ic_pause"
                 android:background="@android:color/transparent"
+                android:contentDescription="Mettre le voyage en pause"
                 app:tint="@android:color/black"/>
 
-            <!-- ⏹ STOP -->
+            <!--  STOP -->
             <ImageButton
                 android:id="@+id/btnStop"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/ic_stop"
                 android:background="@android:color/transparent"
+                android:contentDescription="Arrêter le voyage"
                 app:tint="@android:color/black"/>
 
         </LinearLayout>
 
-        <!-- ➕ ADD -->
+        <!--  ADD -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabAdd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_add"
+            android:contentDescription="Ajouter un POI ou une photo"
             app:backgroundTint="#B39DDB"
             app:tint="@android:color/black"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -95,12 +109,62 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ☰ MENU (vide ou à remplir plus tard) -->
+    <!--  MENU -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationView"
-        android:layout_width="wrap_content"
+        android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#222222" />
+        android:background="#222222">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tabPoi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="POI"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:paddingEnd="24dp" />
+
+                <TextView
+                    android:id="@+id/tabPhotos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Photos"
+                    android:textColor="#BBBBBB"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/menuTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mes POI"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:paddingTop="16dp"
+                android:paddingBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/menuRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+    </com.google.android.material.navigation.NavigationView>
 
 </androidx.drawerlayout.widget.DrawerLayout>

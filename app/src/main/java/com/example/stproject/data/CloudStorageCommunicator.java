@@ -4,6 +4,11 @@ package com.example.stproject.data;
 import android.net.Uri;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnCanceledListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageException;
@@ -13,12 +18,13 @@ import com.google.firebase.storage.UploadTask;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
-
-import com.example.stproject.models.Photo;
 
 public class CloudStorageCommunicator {
     private final FirebaseStorage CSCInstance = FirebaseStorage.getInstance(); // Instance Firebase Storage
+
+    private final CloudFirestoreCommunicator cloudFirestoreCommunicator = new CloudFirestoreCommunicator(); // Instance du communicator Cloud Firestore
     private final StorageReference CSCRef = CSCInstance.getReference(); // Référence Firebase Storage
     private final Queue<Pair<StorageReference, Uri>> uploadQueue; // File des envois à la base de donnée
 
@@ -52,7 +58,15 @@ public class CloudStorageCommunicator {
             uTask.addOnSuccessListener(taskSnapshot -> {
                 // Il faut envoyer la réference de stockage du fichier à la base de donnée Firestore
                 StorageReference fileRef = taskSnapshot.getStorage();
-
+                // Récupérer le voyage concerné et l'ajouter à la Firestore Database
+                try {
+                    // Retrouver l'id du voyage concerné
+                    String tripId = cloudFirestoreCommunicator.recoverIdFromTripName(Objects.requireNonNull(fileRef.getParent()).getName());
+                    // Envoyer la référence de l'image dans Firestore Database
+                    cloudFirestoreCommunicator.ajouter_photo(fileRef, tripId);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }).addOnFailureListener(e -> {
                 // On récupère l'erreur et on la traite
                 int errorCode = ((StorageException) e).getErrorCode();
@@ -112,7 +126,28 @@ public class CloudStorageCommunicator {
         }
     }
 
-    public void deleteImage(Photo image){
-
+    public void deleteImage(StorageReference imageRef){
+        imageRef.delete().addOnSuccessListener(
+                new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        // Deleted Successfully
+                    }
+                }
+        ).addOnFailureListener(
+                new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Deleted Unsuccessfully
+                    }
+                }
+        ).addOnCanceledListener(
+                new OnCanceledListener() {
+                    @Override
+                    public void onCanceled() {
+                        // Delete Canceled
+                    }
+                }
+        );
     }
 }

@@ -16,6 +16,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.stproject.R;
+import com.example.stproject.data.CloudFirestoreCommunicator;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.location.LocationCallback;
@@ -27,7 +28,6 @@ import com.google.android.gms.location.Priority;
 import java.util.Objects;
 
 public class LocationRecovererService extends Service {
-
     /* Définir l'id du channel pour la notification */
     private static final String CHANNEL_ID = "location_service_channel";
 
@@ -39,6 +39,9 @@ public class LocationRecovererService extends Service {
     private LocationRequest locationReq;
 
     private CallbackOnLocation callBack;
+
+    /* Instance du communicator de Firestore database */
+    private static final CloudFirestoreCommunicator cloudFirestoreCommunicator = new CloudFirestoreCommunicator();
 
     /* Booléen qui précise si on est déjà en suivi ou non */
     private boolean isTracking = false;
@@ -56,6 +59,7 @@ public class LocationRecovererService extends Service {
         @Override
         public void onLocationResult(@NonNull LocationResult result){
             /* Je vais utiliser la fonction qu'Olivier va créer pour upload le résultat de la requête (batch de localisation) dans la DB. */
+            cloudFirestoreCommunicator.ajout_path(result.getLocations());
         }
     }
 
@@ -100,10 +104,6 @@ public class LocationRecovererService extends Service {
             case "ACTION_PAUSE" :
                 this.pauseTracking();
                 break;
-
-            case "ACTION_STOP":
-                stopSelf();
-                break;//pour permettre l'arret du service
         }
 
         return START_STICKY; /* Tout est bon, on peut dire à l'OS de garder le service en vie */
