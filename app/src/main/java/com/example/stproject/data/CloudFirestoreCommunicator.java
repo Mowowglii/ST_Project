@@ -48,7 +48,7 @@ public class CloudFirestoreCommunicator {
     }
 
     public interface PathCallback {
-        void onComplete(List<Location> path);
+        void onComplete(List<Map<String, Object>> path);
         void onError(String error);
     }
 
@@ -393,7 +393,7 @@ public class CloudFirestoreCommunicator {
     }
 
     // Partie Path
-    public void ajout_path(List<Location> pointsGps) {
+    public void ajout_path(List<Map<String, Object>> pointsGps) {
         // Ce qui est problématique avec l'attribut voyageidnow c'est que si l'attribut change de valeur pour x ou y raison alors que le suivi en temps réel est actif, les coordonnées GPS seront détournées.
         // idVoyageEnCours cree pour eviter le soucis merci de l avoir remarque
         if (idVoyageEnCours == null)
@@ -409,9 +409,9 @@ public class CloudFirestoreCommunicator {
     public void recuperer_path_voyage(String voyageId, PathCallback callback) {
         db.collection("voyages").document(voyageId).collection("path").get()
                 .addOnSuccessListener(docs -> {
-                    List<Location> path = new ArrayList<>();
+                    List<Map<String, Object>> path = new ArrayList<>();
                     for (DocumentSnapshot d : docs) {
-                        Location p = d.toObject(Location.class);
+                        Map<String, Object> p = d.getData();
                         if (p != null) path.add(p);
                     }
                     callback.onComplete(path);
@@ -420,8 +420,12 @@ public class CloudFirestoreCommunicator {
 
     public void supprimer_path(String voyageId) {
         db.collection("voyages").document(voyageId).collection("path").get()
-                .addOnSuccessListener(docs -> {
-                    for (DocumentSnapshot d : docs) d.getReference().delete();
-                });
+            .addOnSuccessListener(docs -> {
+                WriteBatch batch = db.batch(); 
+                for (DocumentSnapshot d : docs) {
+                    batch.delete(d.getReference());
+                }
+                batch.commit();
+            });
     }
 }

@@ -11,13 +11,13 @@ public class Voyage {
     private String description;
     private Integer note;
     private List<POI> listePois;
-    private List<Photo> listePhotos;
-    private List<Location> path;
+    private List<String> listePhotos;
+    private List<Map<String, Object>> path;
 
     public Voyage() {}
 
     public Voyage(String id, String titre, String description, Integer note,
-                   List<POI> listePois, List<Photo> listePhotos,List<Location> path) {
+                   List<POI> listePois, List<String> listePhotos, List<Map<String, Object>> path) {
         this.id = id;
         this.titre = titre;
         this.description = description;
@@ -68,16 +68,20 @@ public class Voyage {
         this.listePois = listePois;
     }
 
-    public List<Photo> getListePhotos() {
+    public List<String> getListePhotos() {
         return listePhotos;
     }
 
-    public void setListePhotos(List<Photo> listePhotos) {
+    public void setListePhotos(List<String> listePhotos) {
         this.listePhotos = listePhotos;
     }
 
-    public List<Location> getPath() {
+    public List<Map<String, Object>> getPath() {
         return this.path;
-     }
+    }
+
+    public void setPath(List<Map<String, Object>> path) {
+        this.path = path;
+    }
     
 }
