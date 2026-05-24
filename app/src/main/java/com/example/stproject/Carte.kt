@@ -16,6 +16,8 @@ import org.osmdroid.views.overlay.Marker
 //import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import com.example.stproject.service.LocationRecovererService
+import com.example.stproject.service.POIManager
+import com.example.stproject.models.POI
 
 class Carte : AppCompatActivity() {
 
@@ -45,6 +47,8 @@ class Carte : AppCompatActivity() {
     private var tripId : String? = null
     private var tripName : String? = null
 
+    private lateinit var  poiManager: POIManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -59,6 +63,11 @@ class Carte : AppCompatActivity() {
         // /Mathushan :
         tripId = intent.getStringExtra("tripId")
         tripName = intent.getStringExtra("trip_name")
+        poiManager = POIManager()
+        // ? c'est une condition qui dit si trip id est différent de null alors faire ça
+        tripId?.let {
+            poiManager.definirVoyageActif(tripId)
+        }
 
         // Initialisation de la carte
         map = findViewById(R.id.map)
@@ -112,7 +121,7 @@ class Carte : AppCompatActivity() {
     // Mise en pause du trajet
     private fun pauseTrip() {
         tripState = TripState.PAUSED
-        lastPointBeforePause = trackingPoints.lastOrNull()
+        //lastPointBeforePause = trackingPoints.lastOrNull()
         Toast.makeText(this, "Voyage en pause", Toast.LENGTH_SHORT).show()
     }
 
@@ -120,18 +129,18 @@ class Carte : AppCompatActivity() {
     private fun resumeTrip() {
         tripState = TripState.RUNNING
 
-        locationOverlay.myLocation?.let { loc ->
-            val newPoint = GeoPoint(loc.latitude, loc.longitude)
-
-            // Dessine une ligne entre la dernière position et la reprise
-            lastPointBeforePause?.let { old ->
-                drawDashedLine(old, newPoint)
-            }
-
-            trackingPoints.add(newPoint)
-        }
-
-        startTrackingLoop()
+//        locationOverlay.myLocation?.let { loc ->
+//            val newPoint = GeoPoint(loc.latitude, loc.longitude)
+//
+//            // Dessine une ligne entre la dernière position et la reprise
+//            lastPointBeforePause?.let { old ->
+//                drawDashedLine(old, newPoint)
+//            }
+//
+//            trackingPoints.add(newPoint)
+//        }
+//
+//        startTrackingLoop()
         Toast.makeText(this, "Voyage repris", Toast.LENGTH_SHORT).show()
     }
 
@@ -186,20 +195,94 @@ class Carte : AppCompatActivity() {
 //    }
 
     // Ajout d’un point d’intérêt sur la carte
-    private fun addPOI() {
+    // Mathushan :
+
+    private fun addPOI(titre: String) {
+        // vérifie si la position existe
         locationOverlay.myLocation?.let { loc ->
 
-            val poi = POI("POI", GeoPoint(loc.latitude, loc.longitude))
-            poiList.add(poi)
+            poiManager.ajouterPOI(
+                titre,
+                "",
+                0,
+                loc.latitude,
+                loc.longitude,
+                "default",
+                object : POIManager.AjoutPOICallback {
 
-            val marker = Marker(map)
-            marker.position = poi.geoPoint
-            marker.title = poi.name
+                    override fun onSuccess(poi: POI) {
 
-            map.overlays.add(marker)
-            map.invalidate()
-        }
+                        val marker = Marker(map)
+
+                        marker.position = GeoPoint(
+                            poi.latitude,
+                            poi.longitude
+                        )
+
+                        marker.title = poi.titre
+
+                        map.overlays.add(marker)
+                        map.invalidate()
+
+                        Toast.makeText(
+                            this@Carte,
+                            "POI ajouté",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    override fun onError(message: String) {
+                        Toast.makeText(
+                            this@Carte,
+                            message,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+
+        } ?: Toast.makeText(
+            this,
+            "Position GPS indisponible",
+            Toast.LENGTH_SHORT
+        ).show()
     }
+
+//    private fun addPOI() {
+//        locationOverlay.myLocation?.let { loc ->
+//
+//            val poi = POI("POI", GeoPoint(loc.latitude, loc.longitude))
+//            poiList.add(poi)
+//
+//            val marker = Marker(map)
+//            marker.position = poi.geoPoint
+//            marker.title = poi.name
+//
+//            map.overlays.add(marker)
+//            map.invalidate()
+//        }
+//    }
+//    private fun addPOI() {
+//
+//        locationOverlay.myLocation?.let { loc ->
+//
+//            // Création du marqueur sur la carte
+//            val marker = Marker(map)
+//
+//            marker.position = GeoPoint(
+//                loc.latitude,
+//                loc.longitude
+//            )
+//
+//            marker.title = "POI"
+//
+//            // Ajout du marqueur à la carte
+//            map.overlays.add(marker)
+//
+//            // Rafraîchit la carte
+//            map.invalidate()
+//        }
+//    }
 
     // Initialisation des boutons de l’interface
     private fun initButtons() {
@@ -229,17 +312,32 @@ class Carte : AppCompatActivity() {
     }
 
     // Boîte de dialogue pour ajouter un élément (POI ou photo)
-    private fun showAddDialog() {
-        val options = arrayOf("Ajouter POI", "Ajouter Photo")
+//    private fun showAddDialog() {
+//        val options = arrayOf("Ajouter POI", "Ajouter Photo")
+//
+//        androidx.appcompat.app.AlertDialog.Builder(this)
+//            .setTitle("Ajouter")
+//            .setItems(options) { _, which ->
+//                when (which) {
+//                    0 -> addPOI()
+//                    1 -> Toast.makeText(this, "Photo à implémenter", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//            .show()
+//    }
+
+    private fun showAddPOIDialog() {
+        val input = android.widget.EditText(this)
+        input.hint = "Nom du POI"
 
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Ajouter")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> addPOI()
-                    1 -> Toast.makeText(this, "Photo à implémenter", Toast.LENGTH_SHORT).show()
-                }
+            .setTitle("Ajouter un POI")
+            .setView(input)
+            .setPositiveButton("Ajouter") { _, _ ->
+                val titre = input.text.toString().trim()
+                addPOI(titre)
             }
+            .setNegativeButton("Annuler", null)
             .show()
     }
 
