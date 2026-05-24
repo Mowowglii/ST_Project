@@ -38,17 +38,29 @@
 
     <Button
         android:id="@+id/btnStart"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/pastel_purple"
         android:text="@string/start_button"
         android:textColor="@color/purple_text_dark"
+        android:layout_gravity="center"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
         />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <Button
         android:id="@+id/consult"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Mes Voyages" />
+        android:text="Mes Voyages"
+        android:layout_gravity="end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="#483D8B"/>
 
 </LinearLayout>

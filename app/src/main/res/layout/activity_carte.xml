@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!--  MENU -->
+        <!-- Menu -->
         <org.osmdroid.views.MapView
             android:id="@+id/map"
             android:layout_width="0dp"
@@ -39,7 +39,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_margin="16dp"/>
 
-        <!--  START -->
+        <!-- Start -->
         <LinearLayout
             android:id="@+id/controlPanel"
             android:layout_width="0dp"
@@ -62,7 +62,7 @@
                 android:textSize="13sp"
                 android:layout_marginEnd="12dp" />
 
-            <!-- START -->
+            <!-- Start -->
             <ImageButton
                 android:id="@+id/btnStart"
                 android:layout_width="48dp"
@@ -72,7 +72,7 @@
                 android:contentDescription="Démarrer le voyage"
                 app:tint="@android:color/black"/>
 
-            <!--  PAUSE -->
+            <!-- Pause -->
             <ImageButton
                 android:id="@+id/btnPause"
                 android:layout_width="48dp"
@@ -82,7 +82,7 @@
                 android:contentDescription="Mettre le voyage en pause"
                 app:tint="@android:color/black"/>
 
-            <!--  STOP -->
+            <!-- Stop -->
             <ImageButton
                 android:id="@+id/btnStop"
                 android:layout_width="48dp"
@@ -94,7 +94,7 @@
 
         </LinearLayout>
 
-        <!--  ADD -->
+        <!-- Add -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabAdd"
             android:layout_width="wrap_content"
@@ -109,7 +109,7 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!--  MENU -->
+    <!-- Menu -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationView"
         android:layout_width="280dp"
@@ -145,6 +145,7 @@
                     android:text="Photos"
                     android:textColor="#BBBBBB"
                     android:textSize="18sp" />
+
             </LinearLayout>
 
             <TextView
@@ -156,6 +157,13 @@
                 android:textSize="18sp"
                 android:paddingTop="16dp"
                 android:paddingBottom="8dp" />
+
+            <Button
+                android:id="@+id/menuAddButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="+ Ajouter un POI"
+                android:layout_marginBottom="8dp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/menuRecyclerView"

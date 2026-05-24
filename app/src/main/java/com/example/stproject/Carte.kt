@@ -372,6 +372,7 @@ class Carte : AppCompatActivity() {
         val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
         val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
         val menuTitle = findViewById<TextView>(R.id.menuTitle)
+        val menuAddButton = findViewById<Button>(R.id.menuAddButton)
 
         menuRecyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -381,20 +382,36 @@ class Carte : AppCompatActivity() {
 
         findViewById<TextView>(R.id.tabPoi).setOnClickListener {
             menuTitle.text = "Mes POI"
+            menuAddButton.text = "+ Ajouter un POI"
+
             menuRecyclerView.adapter = SuggestionsAdapter(
                 poiList.map { it.titre }
             ) { selectedPoi ->
                 Toast.makeText(this, selectedPoi, Toast.LENGTH_SHORT).show()
             }
+
+            menuAddButton.setOnClickListener {
+                addPOI()
+            }
         }
 
         findViewById<TextView>(R.id.tabPhotos).setOnClickListener {
             menuTitle.text = "Mes Photos"
+            menuAddButton.text = "+ Ajouter une photo"
+
             menuRecyclerView.adapter = SuggestionsAdapter(
                 listOf("Photos à charger depuis le backend")
             ) { selectedPhoto ->
                 Toast.makeText(this, selectedPhoto, Toast.LENGTH_SHORT).show()
             }
+
+            menuAddButton.setOnClickListener {
+                Toast.makeText(this, "Ajout photo à implémenter", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        menuAddButton.setOnClickListener {
+            addPOI()
         }
 
         val controlPanel = findViewById<LinearLayout>(R.id.controlPanel)

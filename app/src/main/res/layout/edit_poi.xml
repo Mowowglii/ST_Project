@@ -5,9 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 🔝 TOP BAR -->
+    <!--  TOP BAR -->
 
-    <!-- 📜 CONTENU SCROLL -->
+    <!-- CONTENU SCROLL -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -55,7 +55,9 @@
                 android:stepSize="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"/>
+                android:layout_marginTop="8dp"
+                android:progressTint="#D2B40C"
+                />
 
             <!--  DESCRIPTION -->
             <EditText
@@ -67,7 +69,7 @@
                 android:inputType="textMultiLine"
                 android:layout_marginTop="8dp"/>
 
-            <!-- 📸 GRILLE PHOTOS -->
+            <!-- GRILLE PHOTOS -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/photoGrid"
                 android:layout_width="match_parent"
@@ -95,6 +97,7 @@
         android:text="Sauvegarder POI"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"/>
+        android:layout_margin="8dp"
+        android:backgroundTint="#483D8B"/>
 
 </LinearLayout>
