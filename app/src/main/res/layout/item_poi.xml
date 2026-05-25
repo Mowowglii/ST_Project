@@ -22,7 +22,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_poi_marker"
             android:contentDescription="Icône POI"
-            android:tint="#B39DDB"
+            app:tint="#B39DDB"
             android:layout_gravity="center_vertical"/>
 
         <LinearLayout

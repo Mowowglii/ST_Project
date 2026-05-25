@@ -29,13 +29,10 @@ class PoiEditDialog(
         val view = inflater.inflate(R.layout.edit_poi, container, false)
 
         val nameInput = view.findViewById<EditText>(R.id.poiName)
-
+        val reviewInput = view.findViewById<EditText>(R.id.poiReview)
         val ratingBar = view.findViewById<RatingBar>(R.id.poiRating)
-
         val saveBtn = view.findViewById<Button>(R.id.saveBtn)
-
         val imagephoto = view.findViewById<ImageView>(R.id.imagephoto)
-
         val spinner = view.findViewById<Spinner>(R.id.spinnerTypeLieu)
 
         val types = listOf(
@@ -57,18 +54,22 @@ class PoiEditDialog(
 
         spinner.adapter = adapter
 
-        spinner.setSelection(0)
+        nameInput.setText(poi.titre)
+        reviewInput.setText(poi.description)
+        ratingBar.rating = poi.note.toFloat()
 
-        nameInput.setText(poi.getTitre())
+        val typeIndex = types.indexOf(poi.type)
 
-        ratingBar.rating = poi.getNote().toFloat()
+        if (typeIndex >= 0) {
+            spinner.setSelection(typeIndex)
+        } else {
+            spinner.setSelection(0)
+        }
 
         saveBtn.setOnClickListener {
-
             val choix = spinner.selectedItem.toString()
 
             if (choix == "Choisir une catégorie") {
-
                 Toast.makeText(
                     requireContext(),
                     "Veuillez choisir une catégorie",
@@ -78,11 +79,10 @@ class PoiEditDialog(
                 return@setOnClickListener
             }
 
-            poi.setTitre(nameInput.text.toString())
-
-            poi.setNote(ratingBar.rating.toInt())
-
-            poi.setType(choix)
+            poi.titre = nameInput.text.toString()
+            poi.description = reviewInput.text.toString()
+            poi.note = ratingBar.rating.toInt()
+            poi.type = choix
 
             onSave(poi)
 
