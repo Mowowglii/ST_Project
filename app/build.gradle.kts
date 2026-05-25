@@ -58,4 +58,5 @@ dependencies {
     implementation("com.makeramen:roundedimageview:2.3.0")//Image view
     implementation("androidx.navigation:navigation-fragment-ktx:2.9.7") // composant pour navigation
     implementation("androidx.navigation:navigation-ui-ktx:2.9.7")
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
 }
