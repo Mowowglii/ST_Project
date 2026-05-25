@@ -4,6 +4,7 @@ package com.example.stproject.ui;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -25,6 +26,7 @@ public class VoyageAdapter extends RecyclerView.Adapter<VoyageAdapter.VoyageView
     // Interface pour gérer le clic
     public interface OnVoyageClickListener {
         void onVoyageClick(Voyage voyage);
+        void onVoyageDelete(Voyage voyage);
     }
 
     public VoyageAdapter(List<Voyage> voyages,
@@ -40,11 +42,14 @@ public class VoyageAdapter extends RecyclerView.Adapter<VoyageAdapter.VoyageView
         TextView tripName;
         TextView tripDuration;
 
+        ImageView btnDelete;
+
         public VoyageViewHolder(@NonNull View itemView) {
             super(itemView);
 
             tripName = itemView.findViewById(R.id.tripName);
             tripDuration = itemView.findViewById(R.id.tripDuration);
+            btnDelete = itemView.findViewById(R.id.btnEditTrip);
         }
     }
 
@@ -76,8 +81,14 @@ public class VoyageAdapter extends RecyclerView.Adapter<VoyageAdapter.VoyageView
         holder.tripDuration.setText("Durée non définie");
 
         // Clique sur un voyage
+        // Clique sur un voyage
         holder.itemView.setOnClickListener(v ->
                 listener.onVoyageClick(voyage)
+        );
+
+// Clique sur le bouton supprimer
+        holder.btnDelete.setOnClickListener(v ->
+                listener.onVoyageDelete(voyage)
         );
     }
 

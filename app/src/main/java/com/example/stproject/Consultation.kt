@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.example.stproject.ui.VoyageAdapter
 import com.example.stproject.models.Voyage
-import com.example.stproject.service.VoyageManager
+import com.example.stproject.Manager.VoyageManager
 
 class Consultation : AppCompatActivity() {
 
@@ -44,6 +44,7 @@ class Consultation : AppCompatActivity() {
     private fun chargerVoyages() {
 
         voyageManager.recupererTousLesVoyages(
+
             object : VoyageManager.ListeVoyagesCallback {
 
                 override fun onSuccess(voyagesRecuperes: List<Voyage>) {
@@ -62,13 +63,13 @@ class Consultation : AppCompatActivity() {
                         emptyText.visibility = View.GONE
                         recyclerView.visibility = View.VISIBLE
 
-                        // Donne les voyages au RecyclerView
                         recyclerView.adapter = VoyageAdapter(
+
                             voyages,
 
-                            // Action quand on clique sur un voyage
                             object : VoyageAdapter.OnVoyageClickListener {
 
+                                // Ouvre la carte du voyage
                                 override fun onVoyageClick(voyage: Voyage) {
 
                                     val intent = Intent(
@@ -76,14 +77,44 @@ class Consultation : AppCompatActivity() {
                                         Carte::class.java
                                     )
 
-                                    // Envoie l'id du voyage
                                     intent.putExtra("tripId", voyage.id)
-
-                                    // Envoie le titre du voyage
                                     intent.putExtra("trip_name", voyage.titre)
 
-                                    // Ouvre Carte
                                     startActivity(intent)
+                                }
+
+                                // Supprime le voyage
+                                override fun onVoyageDelete(voyage: Voyage) {
+
+                                    voyageManager.supprimerVoyage(
+
+                                        voyage,
+
+                                        object : VoyageManager.SuppressionVoyageCallback {
+
+                                            override fun onSuccess() {
+
+                                                voyages.remove(voyage)
+
+                                                recyclerView.adapter?.notifyDataSetChanged()
+
+                                                Toast.makeText(
+                                                    this@Consultation,
+                                                    "Voyage supprimé",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+
+                                            override fun onError(message: String) {
+
+                                                Toast.makeText(
+                                                    this@Consultation,
+                                                    message,
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         )
@@ -101,4 +132,3 @@ class Consultation : AppCompatActivity() {
             }
         )
     }
-}

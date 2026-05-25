@@ -16,7 +16,7 @@ import org.osmdroid.views.overlay.Marker
 //import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import com.example.stproject.service.LocationRecovererService
-import com.example.stproject.service.POIManager
+import com.example.stproject.Manager.POIManager
 import com.example.stproject.models.POI
 
 class Carte : AppCompatActivity() {

@@ -108,5 +108,43 @@ public class VoyageManager {
                 callback.onError((error));
             }
         });
+
+
+    }
+
+    // Callback pour savoir si la suppression du voyage a réussi ou échoué
+    public interface SuppressionVoyageCallback {
+        void onSuccess();
+        void onError(String message);
+    }
+
+    public void supprimerVoyage(Voyage voyage, SuppressionVoyageCallback callback) {
+
+        if (voyage == null || voyage.getId() == null) {
+            callback.onError("Aucun voyage sélectionné.");
+            return;
+        }
+
+        // Définit le voyage à supprimer comme voyage courant
+        cfCommunicator.demarrerNouveauVoyage(voyage.getId());
+
+        // Appelle la suppression complète dans CloudFirestoreCommunicator
+        cfCommunicator.supp_voyage(new CloudFirestoreCommunicator.PhotoCallback() {
+
+            @Override
+            public void onSuccess() {
+                callback.onSuccess();
+            }
+
+            @Override
+            public void onFailure(String erreur) {
+                callback.onError(erreur);
+            }
+
+            @Override
+            public void onPhotosRecuperees(List<String> photoPaths) {
+                // Obligatoire car PhotoCallback l'impose, mais pas utilisé ici
+            }
+        });
     }
 }

@@ -9,7 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.example.stproject.service.VoyageManager
+import com.example.stproject.Manager.VoyageManager
 import com.example.stproject.models.Voyage
 
 // Activité principale de l'application
