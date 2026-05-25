@@ -1,3 +1,6 @@
+// RecyclerView une liste complète à affciher de l'écran, ici nous allons affciher chaque nom du voyage.
+//Consultation contrôle l'écran complet:
+// récupération des voyages et activation de la carte
 package com.example.stproject
 
 import android.content.Intent
@@ -10,72 +13,123 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 import com.example.stproject.ui.VoyageAdapter
-import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.Voyage
+import com.example.stproject.Manager.VoyageManager
 
 class Consultation : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyText: TextView
 
-    private val communicator = CloudFirestoreCommunicator()
+    private val voyageManager = VoyageManager()
 
     private val voyages = mutableListOf<Voyage>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Affiche l'écran consultation
         setContentView(R.layout.activity_consultation)
 
+        // Récupère la liste et le texte "aucun voyage"
         recyclerView = findViewById(R.id.tripRecyclerView)
         emptyText = findViewById(R.id.emptyText)
 
+        // Affichage vertical des voyages
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Charge les voyages
         chargerVoyages()
     }
-
     private fun chargerVoyages() {
 
-        communicator.tous_les_voyages(object : CloudFirestoreCommunicator.VoyageCallback {
+        voyageManager.recupererTousLesVoyages(
 
-            override fun onComplete(voyagesRecuperes: List<Voyage>) {
+            object : VoyageManager.ListeVoyagesCallback {
 
-                voyages.clear()
-                voyages.addAll(voyagesRecuperes)
+                override fun onSuccess(voyagesRecuperes: List<Voyage>) {
 
-                if (voyages.isEmpty()) {
+                    voyages.clear()
+                    voyages.addAll(voyagesRecuperes)
 
-                    emptyText.visibility = View.VISIBLE
-                    recyclerView.visibility = View.GONE
+                    // Aucun voyage trouvé
+                    if (voyages.isEmpty()) {
 
-                } else {
+                        emptyText.visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
 
-                    emptyText.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
+                    } else {
 
-                    val adapter = VoyageAdapter(voyages) { voyage ->
+                        emptyText.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
 
-                        val intent = Intent(this@Consultation, Carte::class.java)
+                        recyclerView.adapter = VoyageAdapter(
 
-                        intent.putExtra("voyage_id", voyage.id)
-                        intent.putExtra("trip_name", voyage.titre)
+                            voyages,
 
-                        startActivity(intent)
+                            object : VoyageAdapter.OnVoyageClickListener {
+
+                                // Ouvre la carte du voyage
+                                override fun onVoyageClick(voyage: Voyage) {
+
+                                    val intent = Intent(
+                                        this@Consultation,
+                                        Carte::class.java
+                                    )
+
+                                    intent.putExtra("tripId", voyage.id)
+                                    intent.putExtra("trip_name", voyage.titre)
+
+                                    startActivity(intent)
+                                }
+
+                                // Supprime le voyage
+                                override fun onVoyageDelete(voyage: Voyage) {
+
+                                    voyageManager.supprimerVoyage(
+
+                                        voyage,
+
+                                        object : VoyageManager.SuppressionVoyageCallback {
+
+                                            override fun onSuccess() {
+
+                                                voyages.remove(voyage)
+
+                                                recyclerView.adapter?.notifyDataSetChanged()
+
+                                                Toast.makeText(
+                                                    this@Consultation,
+                                                    "Voyage supprimé",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+
+                                            override fun onError(message: String) {
+
+                                                Toast.makeText(
+                                                    this@Consultation,
+                                                    message,
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        )
                     }
+                }
 
-                    recyclerView.adapter = adapter
+                override fun onError(message: String) {
+
+                    Toast.makeText(
+                        this@Consultation,
+                        message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
-
-            override fun onError(error: String) {
-
-                Toast.makeText(
-                    this@Consultation,
-                    "Erreur : $error",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        })
+        )
     }
 }
