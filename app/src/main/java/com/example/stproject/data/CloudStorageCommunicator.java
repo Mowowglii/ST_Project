@@ -4,11 +4,8 @@ package com.example.stproject.data;
 import android.net.Uri;
 import android.util.Pair;
 
-import androidx.annotation.NonNull;
 
-import com.google.android.gms.tasks.OnCanceledListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
+
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
@@ -19,7 +16,6 @@ import com.google.firebase.storage.UploadTask;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Queue;
 
 public class CloudStorageCommunicator {
@@ -34,6 +30,9 @@ public class CloudStorageCommunicator {
         uploadQueue = new LinkedList<>(); // Initialisation de la file des envois
     }
 
+    private StorageReference fromStringToRef(String path){
+        return CSCRef.child(path);
+    }
     public void addTripImage(String imagePath, String tripName){
         // Créer l'Uri du fichier
         Uri uri = Uri.fromFile( new File(imagePath) );
@@ -61,10 +60,8 @@ public class CloudStorageCommunicator {
                 StorageReference fileRef = taskSnapshot.getStorage();
                 // Récupérer le voyage concerné et l'ajouter à la Firestore Database
                 try {
-                    // Retrouver l'id du voyage concerné
-                    String tripId = cloudFirestoreCommunicator.recoverIdFromTripName(Objects.requireNonNull(fileRef.getParent()).getName());
                     // Envoyer la référence de l'image dans Firestore Database
-                    cloudFirestoreCommunicator.ajouter_photo(fileRef, tripId);
+                    cloudFirestoreCommunicator.ajouter_photo(fileRef.getPath());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -128,6 +125,7 @@ public class CloudStorageCommunicator {
     }
 
     public Task<Void> deleteImage(String imageRef){
-
+        StorageReference imageReference = fromStringToRef(imageRef);
+        return imageReference.delete();
     }
 }
