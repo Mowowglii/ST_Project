@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.example.stproject.service.reductionlistepoint;
+import java.util.Objects;
+
+import com.example.stproject.utils.ReductionListPoint;
 import android.location.Location;
 
 public class LocationRecovererService extends Service {
@@ -79,20 +81,27 @@ public class LocationRecovererService extends Service {
             /* on recupere le nouveau dernier point  */
             dernierpoint=pointatraite.get(pointatraite.size()-1);
             /* on reduit la liste grace a notre algo douglasPeucker */
-            List<Location> pointreduit = reductionlistepoint.douglasPeucker(pointatraite);
+            List<Location> pointreduit = ReductionListPoint.douglasPeucker(pointatraite);
             /* firestore je prend pas d object lourd donc on ajoute les donnees dans une liste d hasmap  */
+            List<Map<String, Object>> pointaenvoyer = getMapList(pointreduit);
+            cloudFirestoreCommunicator.ajout_path(pointaenvoyer);
+        }
+
+        @NonNull
+        private static List<Map<String, Object>> getMapList(List<Location> pointreduit) {
             List<Map<String, Object>> pointaenvoyer = new ArrayList<>();
             for (int i = 0; i < pointreduit.size() - 1; i++){
-                Location localisation=pointreduit.get(i);
+                Location localisation= pointreduit.get(i);
                 if (localisation !=null){
                     Map<String,Object>point=new HashMap<>();
                     point.put("latitude",localisation.getLatitude());
                     point.put("longitude",localisation.getLongitude());
+                    point.put("timestamp", localisation.getElapsedRealtimeNanos());
                     pointaenvoyer.add(point);
                 }
-                
+
             }
-            cloudFirestoreCommunicator.ajout_path(pointaenvoyer);
+            return pointaenvoyer;
         }
     }
 
