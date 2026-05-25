@@ -1,7 +1,4 @@
-// RecyclerView une liste complète à affciher de l'écran, ici nous allons affciher chaque nom du voyage.
-//Consultation contrôle l'écran complet:
-// récupération des voyages et activation de la carte
-package com.example.stproject
+package com.example.stproject.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,8 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
-import com.example.stproject.ui.VoyageAdapter
+import com.example.stproject.R
 import com.example.stproject.models.Voyage
 import com.example.stproject.service.VoyageManager
 

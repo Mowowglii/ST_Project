@@ -1,4 +1,4 @@
-package com.example.stproject
+package com.example.stproject.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.Spinner
 import android.widget.Toast
+import com.example.stproject.R
 import com.example.stproject.models.POI
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 

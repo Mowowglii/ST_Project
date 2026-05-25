@@ -23,16 +23,16 @@
         android:theme="@style/Theme.STProject">
 
         <activity
-            android:name=".Carte"
+            android:name=".ui.Carte"
             android:exported="false"
             android:theme="@style/AppTheme" />
 
         <activity
-            android:name=".Consultation"
+            android:name=".ui.Consultation"
             android:exported="false" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
 
             <intent-filter>

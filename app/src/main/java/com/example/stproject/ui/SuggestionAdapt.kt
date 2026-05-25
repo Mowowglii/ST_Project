@@ -1,4 +1,5 @@
-package com.example.stproject
+package com.example.stproject.ui
+import android.R
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,12 +14,12 @@ class SuggestionsAdapter(
 ) : RecyclerView.Adapter<SuggestionsAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val text: TextView = view.findViewById(android.R.id.text1)
+        val text: TextView = view.findViewById(R.id.text1)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_1, parent, false)
+            .inflate(R.layout.simple_list_item_1, parent, false)
         return ViewHolder(view)
     }
 

@@ -1,6 +1,8 @@
-package com.example.stproject
+package com.example.stproject.ui
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,19 +14,23 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.stproject.R
 import com.example.stproject.models.POI
 import com.example.stproject.models.Photo
 import com.example.stproject.service.LocationRecovererService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
@@ -61,6 +67,8 @@ class Carte : AppCompatActivity() {
     private var tripId: String? = null
     private var tripName: String? = null
 
+    private var isSelectingPoiLocation = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -91,6 +99,7 @@ class Carte : AppCompatActivity() {
 
         // Initialisation du GPS
         setupGPS()
+        setupMapClickForPoi()
 
         // Initialisation des boutons
         initButtons()
@@ -190,6 +199,47 @@ class Carte : AppCompatActivity() {
         updateTripStatus()
     }
 
+    private fun setupMapClickForPoi() {
+
+        val receiver = object : MapEventsReceiver {
+
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+
+                if (isSelectingPoiLocation && p != null) {
+
+                    isSelectingPoiLocation = false
+
+                    val poi = POI(
+                        "POI",
+                        "",
+                        0,
+                        p.latitude,
+                        p.longitude,
+                        "autre"
+                    )
+
+                    PoiEditDialog(poi) { updatedPoi ->
+
+                        poiList.add(updatedPoi)
+
+                        afficherPoiSurCarte(updatedPoi)
+
+                    }.show(supportFragmentManager, "PoiEditDialog")
+
+                    return true
+                }
+
+                return false
+            }
+
+            override fun longPressHelper(p: GeoPoint?): Boolean {
+                return false
+            }
+        }
+
+        map.overlays.add(MapEventsOverlay(receiver))
+    }
+
     private fun stopTrip() {
 
         // Retour à l'état IDLE
@@ -217,17 +267,17 @@ class Carte : AppCompatActivity() {
         when (tripState) {
             TripState.IDLE -> {
                 statusText.text = "Prêt"
-                btnStart.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                btnStart.setBackgroundColor(Color.TRANSPARENT)
             }
 
             TripState.RUNNING -> {
                 statusText.text = "● Enregistrement en cours"
-                btnStart.setBackgroundColor(android.graphics.Color.parseColor("#C8E6C9"))
+                btnStart.setBackgroundColor(Color.parseColor("#C8E6C9"))
             }
 
             TripState.PAUSED -> {
                 statusText.text = "Pause"
-                btnStart.setBackgroundColor(android.graphics.Color.parseColor("#FFE0B2"))
+                btnStart.setBackgroundColor(Color.parseColor("#FFE0B2"))
             }
         }
     }
@@ -273,10 +323,11 @@ class Carte : AppCompatActivity() {
             setPoints(trackingPoints)
 
             // Épaisseur de la ligne
-            outlinePaint.strokeWidth = 14f
-            outlinePaint.color = android.graphics.Color.parseColor("#7E57C2")
-            outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
-            outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+            outlinePaint.strokeWidth = 24f
+            outlinePaint.color = Color.parseColor("#4CAF50")
+            outlinePaint.strokeCap = Paint.Cap.ROUND
+            outlinePaint.strokeJoin = Paint.Join.ROUND
+            outlinePaint.isAntiAlias = true
         }
 
         // Ajout de la ligne à la carte
@@ -294,9 +345,9 @@ class Carte : AppCompatActivity() {
             setPoints(listOf(start, end))
 
             outlinePaint.strokeWidth = 10f
-            outlinePaint.color = android.graphics.Color.GRAY
+            outlinePaint.color = Color.GRAY
             outlinePaint.alpha = 180
-            outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+            outlinePaint.strokeCap = Paint.Cap.ROUND
         }
 
         map.overlays.add(dashedLine)
@@ -474,7 +525,7 @@ class Carte : AppCompatActivity() {
 
         val options = arrayOf("Ajouter POI", "Ajouter Photo")
 
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle("Ajouter")
             .setItems(options) { _, which ->
 
@@ -497,7 +548,7 @@ class Carte : AppCompatActivity() {
     private fun showResumeDialog() {
 
         // Fenêtre de confirmation avant reprise du voyage
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle("Reprendre le voyage")
             .setMessage("Voulez-vous reprendre votre voyage ?")
             .setPositiveButton("Oui") { _, _ ->
@@ -512,7 +563,7 @@ class Carte : AppCompatActivity() {
         // Chargement du layout personnalisé
         val dialogView = layoutInflater.inflate(R.layout.stop_save_trip, null)
 
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
 
@@ -560,4 +611,3 @@ class Carte : AppCompatActivity() {
         dialog.show()
     }
 }
-// => execute le code quand le gps trouve position pour la premiere fois

@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
+
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp">
+<!--
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/themeSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mode bleu"
+        android:layout_gravity="center"/> -->
+
 
     <ImageView
         android:id="@+id/imgLogo"
@@ -52,6 +61,13 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
+
+    <ImageView
+        android:id="@+id/travelCharacter"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/traveler"
+        android:layout_marginBottom="12dp" />
 
     <Button
         android:id="@+id/consult"
