@@ -1,4 +1,5 @@
-// VoyageAdapter contrôle seulement l'affichage de chaque voyage dans la liste.
+///  Cette class fait en sorte d' afficher ligne par ligne les voyages récupéré par la class consultation
+/// Cette class ne récupére rien de la base de donnée.
 package com.example.stproject.ui;
 
 import android.view.LayoutInflater;
@@ -9,82 +10,64 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.stproject.R;
 import com.example.stproject.models.Voyage;
 
 import java.util.List;
 
 public class VoyageAdapter extends RecyclerView.Adapter<VoyageAdapter.VoyageViewHolder> {
 
-    // Liste des voyages à afficher
     private final List<Voyage> voyages;
-
-    // Action quand on clique sur un voyage
     private final OnVoyageClickListener listener;
 
-    // Interface pour gérer le clic
     public interface OnVoyageClickListener {
         void onVoyageClick(Voyage voyage);
     }
 
-    public VoyageAdapter(List<Voyage> voyages,
-                         OnVoyageClickListener listener) {
-
+    public VoyageAdapter(List<Voyage> voyages, OnVoyageClickListener listener) {
         this.voyages = voyages;
         this.listener = listener;
     }
 
-    // Représente une ligne du RecyclerView
-    public static class VoyageViewHolder extends RecyclerView.ViewHolder {
-
-        TextView tripName;
-        TextView tripDuration;
-
-        public VoyageViewHolder(@NonNull View itemView) {
-            super(itemView);
-
-            tripName = itemView.findViewById(R.id.tripName);
-            tripDuration = itemView.findViewById(R.id.tripDuration);
-        }
-    }
-
     @NonNull
     @Override
-    public VoyageViewHolder onCreateViewHolder(
-            @NonNull ViewGroup parent,
-            int viewType
-    ) {
-
-        // Relie item_trip.xml au RecyclerView
+    public VoyageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_trip, parent, false);
+                .inflate(android.R.layout.simple_list_item_1, parent, false);
 
         return new VoyageViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(
-            @NonNull VoyageViewHolder holder,
-            int position
-    ) {
-
-        // Voyage actuel
+    public void onBindViewHolder(@NonNull VoyageViewHolder holder, int position) {
         Voyage voyage = voyages.get(position);
 
-        // Affiche les informations du voyage
-        holder.tripName.setText(voyage.getTitre());
-        holder.tripDuration.setText("Durée non définie");
+        String titre = voyage.getTitre();
 
-        // Clique sur un voyage
-        holder.itemView.setOnClickListener(v ->
-                listener.onVoyageClick(voyage)
-        );
+        if (titre == null || titre.isEmpty()) {
+            titre = "Voyage sans titre";
+        }
+
+        holder.tripTitle.setText(titre);
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onVoyageClick(voyage);
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-
-        // Nombre de voyages dans la liste
         return voyages.size();
+    }
+
+    static class VoyageViewHolder extends RecyclerView.ViewHolder {
+
+        TextView tripTitle;
+
+        public VoyageViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tripTitle = itemView.findViewById(android.R.id.text1);
+        }
     }
 }
