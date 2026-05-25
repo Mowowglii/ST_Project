@@ -1,4 +1,4 @@
-package com.example.stproject.service;
+package com.example.stproject.Manager;
 
 import com.example.stproject.data.CloudFirestoreCommunicator;
 import com.example.stproject.models.POI;
@@ -140,5 +140,4 @@ public class POIManager {
         void onSuccess(List<POI> pois);
         void onError(String message);
     }
-
 }
