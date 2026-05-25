@@ -287,34 +287,21 @@ public class CloudFirestoreCommunicator {
 
     // Partie Photo
     public void ajouter_photo(String photo_paths) {
-        if (voyageidnow == null || photo_paths == null || photo_paths.isEmpty()) {
-            Log.e("Firestore", "Impossible d'ajouter les photos : voyageidnow est nul ou la liste est vide.");
-            return;
+        if (voyageidnow == null || photo_path == null || photo_path.isEmpty()) {
+        Log.e("Firestore", "Impossible d'ajouter la photo : voyageidnow est nul ou chemin vide.");
+        return;
         }
-        DocumentReference voyageRef = db.collection("voyages").document(voyageidnow);
-        voyageRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                if (documentSnapshot.contains("photos_paths") && documentSnapshot.get("photos_paths") != null) {
-                    voyageRef.update("photos_paths", FieldValue.arrayUnion(photo_paths.toArray()))
-                            .addOnSuccessListener(aVoid -> Log.d("Firestore", "Photos ajoutées au champ existant."))
-                            .addOnFailureListener(e -> Log.e("Firestore", "Erreur update photos_paths: " + e.getMessage()));
-                } else {
-                    List<String> premierePhotopath = new ArrayList<>();
-                    premierePhotopath.add(photo_path);
 
-                    Map<String, Object> nouveauChamp = new HashMap<>();
-                    nouveauChamp.put("photos_paths", premierePhotopath);
 
-                    voyageRef.update(nouveauChamp)
-                            .addOnSuccessListener(aVoid -> Log.d("Firestore", "Champ créé et première photo ajoutée."))
-                            .addOnFailureListener(e -> Log.e("Firestore", "Erreur création champ photos_paths: " + e.getMessage()));
-                }
-                
-            } 
-        }).addOnFailureListener(e -> {
-            Log.e("Firestore", "Erreur de lecture du document voyage: " + e.getMessage());
-        });
-    }
+        Map<String, Object> photodata = new HashMap<>();
+        photodata.put("idvoyage",voyageidnow);
+        photodata.put("photo_path", photo_path);
+        db.collection("voyages").document(voyageidnow)
+                .collection("photos")
+                .add(photoData)
+                .addOnSuccessListener(documentReference -> Log.d("Firestore", "Photo ajoutée à la sous-collection avec l'ID : " + documentReference.getId()))
+                .addOnFailureListener(e -> Log.e("Firestore", "Erreur ajout photo sous-collection : " + e.getMessage()));
+        }
 
 
 
@@ -380,7 +367,7 @@ public class CloudFirestoreCommunicator {
                 return;
             }
 
-            db.collection("photos").whereIn("idVoyage", ids).get().addOnSuccessListener(docs -> {
+            db.collection("photos").whereIn("idvoyage", ids).get().addOnSuccessListener(docs -> {
                     List<String> listephotoPaths = new ArrayList<>();
                     for (DocumentSnapshot d : docs) {
                         String path = d.getString("photo_path"); 
