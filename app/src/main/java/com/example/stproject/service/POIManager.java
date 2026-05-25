@@ -105,4 +105,40 @@ public class POIManager {
                 }
         );
     }
+
+    public void recupererPOIDuVoyage(
+            String voyageId,
+            ListePOICallback callback
+    ) {
+        if (voyageId == null || voyageId.trim().isEmpty()) {
+            callback.onError("Aucun voyage sélectionné");
+            return;
+        }
+
+        cfCommunicator.recuperer_une_liste_de_poi(
+                new CloudFirestoreCommunicator.POICallback() {
+                    @Override
+                    public void onComplete(List<POI> pois) {
+                        List<String> ids = new ArrayList<>();
+                        ids.add(voyageId);
+
+                        List<POI> poisFiltres =
+                                cfCommunicator.filtrer_par_voyages(pois, ids);
+
+                        callback.onSuccess(poisFiltres);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
+    }
+
+    public interface ListePOICallback {
+        void onSuccess(List<POI> pois);
+        void onError(String message);
+    }
+
 }

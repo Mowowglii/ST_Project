@@ -82,6 +82,7 @@ class Carte : AppCompatActivity() {
         map.maxZoomLevel = 20.0
 
         setupGPS()
+        chargerPOIDuVoyage()
         initButtons()
     }
 
@@ -197,6 +198,23 @@ class Carte : AppCompatActivity() {
     // Ajout d’un point d’intérêt sur la carte
     // Mathushan :
 
+    private fun afficherMarkerPOI(poi: POI) {
+        val marker = Marker(map)
+
+        marker.position = GeoPoint(
+            poi.latitude,
+            poi.longitude
+        )
+
+        marker.title = poi.titre
+        marker.relatedObject = poi
+
+        configurerClickMarker(marker)
+
+        map.overlays.add(marker)
+        map.invalidate()
+    }
+
     private fun addPOI(titre: String) {
         // vérifie si la position existe
         locationOverlay.myLocation?.let { loc ->
@@ -211,21 +229,21 @@ class Carte : AppCompatActivity() {
                 object : POIManager.AjoutPOICallback {
 
                     override fun onSuccess(poi: POI) {
-
-                        val marker = Marker(map)
-
-                        marker.position = GeoPoint(
-                            poi.latitude,
-                            poi.longitude
-                        )
-
-                        marker.title = poi.titre
-                        // avant le poi ne contenait que le titre mais maintenant ça contient l'objet POI.
-                        marker.relatedObject = poi
-                        configurerClickMarker(marker)
-
-                        map.overlays.add(marker)
-                        map.invalidate()
+                        afficherMarkerPOI(poi)
+//                        val marker = Marker(map)
+//
+//                        marker.position = GeoPoint(
+//                            poi.latitude,
+//                            poi.longitude
+//                        )
+//
+//                        marker.title = poi.titre
+//                        // avant le poi ne contenait que le titre mais maintenant ça contient l'objet POI.
+//                        marker.relatedObject = poi
+//                        configurerClickMarker(marker)
+//
+//                        map.overlays.add(marker)
+//                        map.invalidate()
 
                         Toast.makeText(
                             this@Carte,
@@ -362,6 +380,31 @@ class Carte : AppCompatActivity() {
 
             .show()
     }
+
+    private fun chargerPOIDuVoyage() {
+        tripId?.let { voyageId ->
+
+            poiManager.recupererPOIDuVoyage(
+                voyageId,
+                object : POIManager.ListePOICallback {
+
+                    override fun onSuccess(pois: List<POI>) {
+                        for (poi in pois) {
+                            afficherMarkerPOI(poi)
+                        }
+                    }
+
+                    override fun onError(message: String) {
+                        Toast.makeText(
+                            this@Carte,
+                            message,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
+    }
 //    private fun addPOI() {
 //        locationOverlay.myLocation?.let { loc ->
 //
@@ -402,7 +445,7 @@ class Carte : AppCompatActivity() {
     private fun initButtons() {
 
         findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener {
-            showAddDialog()
+            showAddPOIDialog()
         }
 
         findViewById<ImageButton>(R.id.btnStart).setOnClickListener {
