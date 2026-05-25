@@ -2,6 +2,8 @@ package com.example.stproject.models;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import android.location.Location;
 
 public class Voyage {
