@@ -21,12 +21,13 @@ import java.util.Queue;
 public class CloudStorageCommunicator {
     private final FirebaseStorage CSCInstance = FirebaseStorage.getInstance(); // Instance Firebase Storage
 
-    private final CloudFirestoreCommunicator cloudFirestoreCommunicator = new CloudFirestoreCommunicator(); // Instance du communicator Cloud Firestore
+    private final CloudFirestoreCommunicator cloudFirestoreCommunicator; // Instance du communicator Cloud Firestore
     private final StorageReference CSCRef = CSCInstance.getReference(); // Référence Firebase Storage
     private final Queue<Pair<StorageReference, Uri>> uploadQueue; // File des envois à la base de donnée
 
     // Constructeur de la classe
-    public CloudStorageCommunicator(){
+    public CloudStorageCommunicator(CloudFirestoreCommunicator cfc){
+        this.cloudFirestoreCommunicator = cfc;
         uploadQueue = new LinkedList<>(); // Initialisation de la file des envois
     }
 

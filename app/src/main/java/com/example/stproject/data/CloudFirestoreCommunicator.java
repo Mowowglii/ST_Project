@@ -25,7 +25,7 @@ public class CloudFirestoreCommunicator {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    private final CloudStorageCommunicator CSCommunicator = new CloudStorageCommunicator();
+    private final CloudStorageCommunicator CSCommunicator = new CloudStorageCommunicator(this);
 
     private List<Voyage> sacvoyage = new ArrayList<>();
     private List<POI> sacpoi = new ArrayList<>();
