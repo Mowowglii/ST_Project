@@ -2,6 +2,8 @@ package com.example.stproject.models;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import android.location.Location;
 
 public class Voyage {
@@ -11,19 +13,19 @@ public class Voyage {
     private String description;
     private Integer note;
     private List<POI> listePois;
-    private List<String> photo_paths;
-    private List<Location> path;
+    private List<String> listePhotos;
+    private List<Map<String, Object>> path;
 
     public Voyage() {}
 
     public Voyage(String id, String titre, String description, Integer note,
-                   List<POI> listePois, List<String> photo_paths,List<Location> path) {
+                   List<POI> listePois, List<String> listePhotos, List<Map<String, Object>> path) {
         this.id = id;
         this.titre = titre;
         this.description = description;
         this.note = note;
         this.listePois = listePois;
-        this.photo_paths = photo_paths;
+        this.listePhotos = listePhotos;
         this.path = path;
     }
 
@@ -68,16 +70,20 @@ public class Voyage {
         this.listePois = listePois;
     }
 
-    public List<Photo> getListePhotos() {
+    public List<String> getListePhotos() {
         return listePhotos;
     }
 
-    public void setphoto_paths(List<String> photo_paths) {
-        this.photo_paths = photo_paths;
+    public void setListePhotos(List<String> listePhotos) {
+        this.listePhotos = listePhotos;
     }
 
-    public List<Location> getPath() {
+    public List<Map<String, Object>> getPath() {
         return this.path;
-     }
+    }
+
+    public void setPath(List<Map<String, Object>> path) {
+        this.path = path;
+    }
     
 }
