@@ -24,6 +24,9 @@ import java.util.Map;
 public class CloudFirestoreCommunicator {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    private final CloudStorageCommunicator CSCommunicator = new CloudStorageCommunicator();
+
     private List<Voyage> sacvoyage = new ArrayList<>();
     private List<POI> sacpoi = new ArrayList<>();
     private String voyageidnow;
@@ -111,66 +114,70 @@ public class CloudFirestoreCommunicator {
     }
 
     public void supp_voyage(PhotoCallback callback) {
-            if (voyageidnow == null) {
-                callback.onFailure("Aucun voyage sélectionné.");
-                return;
-            }
-        
-            String idASupprimer = voyageidnow;
-            if (idASupprimer.equals(idvoyageencours)){
-                arreterVoyageActif() }
+        if (voyageidnow == null) {
+            callback.onFailure("Aucun voyage sélectionné.");
+            return;
+        }
 
-            db.collection("voyages").document(idASupprimer).collection("pois").get()
-                    .addOnSuccessListener(snapshots -> {
-                        List<POI> poisASupprimer = new ArrayList<>();
-                        for (DocumentSnapshot ds : snapshots) {
-                            POI p = ds.toObject(POI.class);
-                            if (p != null) poisASupprimer.add(p);
+        String idASupprimer = voyageidnow;
+        if (idASupprimer.equals(idvoyageencours)) {
+            arreterVoyageActif();
+        }
+
+        db.collection("voyages").document(idASupprimer).collection("pois").get()
+                .addOnSuccessListener(snapshots -> {
+                    List<POI> poisASupprimer = new ArrayList<>();
+                    for (DocumentSnapshot ds : snapshots) {
+                        POI p = ds.toObject(POI.class);
+                        if (p != null) poisASupprimer.add(p);
+                    }
+                    supp_poi(poisASupprimer, new POICallback() {
+                        @Override
+                        public void onComplete(List<POI> pois) {
+                            Log.d("Firestore", "POIs supprimés avec succès pendant la suppression du voyage.");
                         }
-                        supp_poi(poisASupprimer, new POICallback() {
-                            @Override
-                            public void onComplete(List<POI> pois) {
-                                Log.d("Firestore", "POIs supprimés avec succès pendant la suppression du voyage.");
-                            }
 
-                            @Override
-                            public void onError(String error) {
-                                Log.e("Firestore", "Erreur suppression POIs pendant le supp_voyage: " + error);
-                            }
-                        });
-                
-            supprimer_path(idASupprimer);
+                        @Override
+                        public void onError(String error) {
+                            Log.e("Firestore", "Erreur suppression POIs pendant le supp_voyage: " + error);
+                        }
+                    });
 
-            recup_photo_pour_une_liste_de_voyage(List.of(idASupprimer), new PhotoCallback() {
-                @Override
-                public void onPhotosRecuperees(List<String> paths) { 
-                    supprimer_liste_photo_path(paths, new PhotoCallback() {
+                    supprimer_path(idASupprimer);
+
+                    recup_photo_pour_une_liste_de_voyage(List.of(idASupprimer), new PhotoCallback() {
+                        @Override
+                        public void onPhotosRecuperees(List<String> paths) {
+                            supprimer_liste_photo_path(paths, new PhotoCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    db.collection("voyages").document(idASupprimer).delete()
+                                            .addOnSuccessListener(unused -> callback.onSuccess())
+                                            .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+                                }
+
+                                @Override
+                                public void onFailure(String e) {
+                                    callback.onFailure(e);
+                                }
+
+                                @Override
+                                public void onPhotosRecuperees(List<String> p) {
+                                }
+                            });
+                        }
+
                         @Override
                         public void onSuccess() {
-                            db.collection("voyages").document(idASupprimer).delete()
-                                    .addOnSuccessListener(unused -> callback.onSuccess())
-                                    .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
                         }
 
                         @Override
                         public void onFailure(String e) {
                             callback.onFailure(e);
                         }
-
-                        @Override
-                        public void onPhotosRecuperees(List<String> p) {}
                     });
-                }
-
-                @Override
-                public void onSuccess() {}
-
-                @Override
-                public void onFailure(String e) {
-                    callback.onFailure(e);
-                }
-            });
-        }
+                });
+    }
     public void tous_les_voyages(VoyageCallback callback) {
         db.collection("voyages").get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
@@ -287,7 +294,7 @@ public class CloudFirestoreCommunicator {
 
     // Partie Photo
     public void ajouter_photo(String photo_paths) {
-        if (voyageidnow == null || photo_path == null || photo_path.isEmpty()) {
+        if (voyageidnow == null || photo_paths == null || photo_paths.isEmpty()) {
         Log.e("Firestore", "Impossible d'ajouter la photo : voyageidnow est nul ou chemin vide.");
         return;
         }
@@ -295,16 +302,13 @@ public class CloudFirestoreCommunicator {
 
         Map<String, Object> photodata = new HashMap<>();
         photodata.put("idvoyage",voyageidnow);
-        photodata.put("photo_path", photo_path);
+        photodata.put("photo_path", photo_paths);
         db.collection("voyages").document(voyageidnow)
                 .collection("photos")
-                .add(photoData)
+                .add(photodata)
                 .addOnSuccessListener(documentReference -> Log.d("Firestore", "Photo ajoutée à la sous-collection avec l'ID : " + documentReference.getId()))
                 .addOnFailureListener(e -> Log.e("Firestore", "Erreur ajout photo sous-collection : " + e.getMessage()));
         }
-
-
-
 
     public void supprimer_liste_photo_path(List<String> photo_paths, PhotoCallback callback) {
         if (photo_paths == null || photo_paths.isEmpty()) {
@@ -316,7 +320,7 @@ public class CloudFirestoreCommunicator {
 
         for (String path : photo_paths) {
             if (path != null && !path.isEmpty()) {
-                Task<Void> deleteOriginalTask = deleteImage(path); 
+                Task<Void> deleteOriginalTask = CSCommunicator.deleteImage(path);
                 deletionTasks.add(deleteOriginalTask);
             }
         }
@@ -326,40 +330,6 @@ public class CloudFirestoreCommunicator {
             .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
-
-
-    
-    
-    //public void recup_photos_proches_pois(List<POI> pois, PhotoCallback callback) {
-      //  List<String> ids = new ArrayList<>();
-       // for (POI p : pois) if (p.getIdVoyage() != null && !ids.contains(p.getIdVoyage())) ids.add(p.getIdVoyage());
-
-        //recup_photo_pour_une_liste_de_voyage(ids, new PhotoCallback() {
-          //  @Override
-            //public void onPhotosRecuperees(List<Photo> toutes) {
-              //  List<Photo> result = new ArrayList<>();
-               // for (Photo ph : toutes) {
-                 //   for (POI poi : pois) {
-                   //     float[] dist = new float[1];
-                    //    Location.distanceBetween(poi.getLatitude(), poi.getLongitude(), ph.getLatitude(), ph.getLongitude(), dist);
-                      //  if (dist[0] <= 25) {
-                        //    result.add(ph);
-                          //  break;
-                        //}
-                    //}
-                //}
-                //callback.onPhotosRecuperees(result);
-            //}
-
-            //@Override
-            //public void onSuccess() {
-            //}
-
-            //@Override
-            //public void onFailure(String e) {
-            //}
-        //});
-    //}
 
     public void recup_photo_pour_une_liste_de_voyage(List<String> ids, PhotoCallback callback) {
             if (ids.isEmpty()) {
@@ -385,11 +355,11 @@ public class CloudFirestoreCommunicator {
     public void ajout_path(List<Map<String, Object>> pointsGps) {
         // Ce qui est problématique avec l'attribut voyageidnow c'est que si l'attribut change de valeur pour x ou y raison alors que le suivi en temps réel est actif, les coordonnées GPS seront détournées.
         // idVoyageEnCours cree pour eviter le soucis merci de l avoir remarque
-        if (idVoyageEnCours == null)
+        if (idvoyageencours == null)
             return;
         WriteBatch batch = db.batch();
-        for (Location pt : pointsGps) {
-            DocumentReference ref = db.collection("voyages").document(idVoyageEnCours).collection("path").document();
+        for (Map<String, Object> pt : pointsGps) {
+            DocumentReference ref = db.collection("voyages").document(idvoyageencours).collection("path").document();
             batch.set(ref, pt);
         }
         batch.commit();
