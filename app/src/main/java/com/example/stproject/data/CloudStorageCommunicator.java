@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import com.google.android.gms.tasks.OnCanceledListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageException;
@@ -126,28 +127,7 @@ public class CloudStorageCommunicator {
         }
     }
 
-    public void deleteImage(StorageReference imageRef){
-        imageRef.delete().addOnSuccessListener(
-                new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        // Deleted Successfully
-                    }
-                }
-        ).addOnFailureListener(
-                new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        // Deleted Unsuccessfully
-                    }
-                }
-        ).addOnCanceledListener(
-                new OnCanceledListener() {
-                    @Override
-                    public void onCanceled() {
-                        // Delete Canceled
-                    }
-                }
-        );
+    public Task<Void> deleteImage(String imageRef){
+
     }
 }
