@@ -56,10 +56,7 @@ public class TripManager {
                                 cleanTitle,
                                 "",
                                 null,
-                                false,
-                                new ArrayList<>(),
-                                new ArrayList<>(),
-                                new ArrayList<>()
+                                false
                         );
 
                         cfCommunicator.addTrip(trip);
@@ -191,4 +188,4 @@ public class TripManager {
 //            }
 //        });
 //    }
-}
+//}
