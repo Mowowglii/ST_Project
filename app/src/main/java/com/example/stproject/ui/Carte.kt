@@ -439,7 +439,7 @@ class Carte : AppCompatActivity() {
             "autre"
         )
 
-        PoiEditDialog(poi) { updatedPoi ->
+        PoiEditDialog(poi) { updatedPoi, photos ->
 
             tripId?.let {
                 poiManager.definirVoyageActif(it)
@@ -455,8 +455,20 @@ class Carte : AppCompatActivity() {
                 object : POIManager.AjoutPOICallback {
 
                     override fun onSuccess(poi: POI) {
+
                         poiList.add(poi)
+
+                        // Associe les photos au POI créé
+                        photos.forEach { photo ->
+
+                            photo.associatedPOI = poi
+                        }
+
+                        // Ajoute les photos à la liste globale
+                        acceptedPhotos.addAll(photos)
+
                         afficherMarkerPOI(poi)
+
                         refreshPoiMenu()
 
                         Toast.makeText(
@@ -493,7 +505,7 @@ class Carte : AppCompatActivity() {
 
     // Ouvre le formulaire de modification d'un POI
     private fun showModifierPOIDialog(poi: POI, marker: Marker) {
-        PoiEditDialog(poi) { updatedPoi ->
+        PoiEditDialog(poi) { updatedPoi, _ ->
 
             poiManager.modifierPOI(
                 poi,

@@ -1,5 +1,6 @@
 package com.example.stproject.ui
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,15 +12,43 @@ import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.stproject.R
 import com.example.stproject.models.POI
+import com.example.stproject.models.Photo
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-// Fenêtre permettant de créer ou modifier un POI
 class PoiEditDialog(
     private val poi: POI,
-    private val onSave: (POI) -> Unit
+    private val onSave: (POI, List<Photo>) -> Unit
 ) : BottomSheetDialogFragment() {
+
+    private val selectedPhotos = mutableListOf<Photo>()
+    private var photoAdapter: PoiPhotoAdapter? = null
+
+    private val photoPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris: List<Uri> ->
+
+            if (uris.isEmpty()) {
+                Toast.makeText(
+                    requireContext(),
+                    "Aucune photo sélectionnée",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@registerForActivityResult
+            }
+
+            for (uri in uris) {
+                val photo = Photo()
+                photo.imageURI = uri
+                photo.associatedPOI = poi
+                selectedPhotos.add(photo)
+            }
+
+            photoAdapter?.notifyDataSetChanged()
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -27,18 +56,16 @@ class PoiEditDialog(
         savedInstanceState: Bundle?
     ): View {
 
-        // Charge le layout du formulaire POI
         val view = inflater.inflate(R.layout.edit_poi, container, false)
 
-        // Récupération des éléments de l'interface
         val nameInput = view.findViewById<EditText>(R.id.poiName)
         val reviewInput = view.findViewById<EditText>(R.id.poiReview)
         val ratingBar = view.findViewById<RatingBar>(R.id.poiRating)
         val saveBtn = view.findViewById<Button>(R.id.saveBtn)
         val imagephoto = view.findViewById<ImageView>(R.id.imagephoto)
         val spinner = view.findViewById<Spinner>(R.id.spinnerTypeLieu)
+        val photoGrid = view.findViewById<RecyclerView>(R.id.photoGrid)
 
-        // Liste des catégories disponibles pour un POI
         val types = listOf(
             "Choisir une catégorie",
             "Monument",
@@ -48,7 +75,6 @@ class PoiEditDialog(
             "autre"
         )
 
-        // Adaptateur utilisé pour remplir le spinner des catégories
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
@@ -59,12 +85,10 @@ class PoiEditDialog(
 
         spinner.adapter = adapter
 
-        // Pré-remplit le formulaire si le POI existe déjà
         nameInput.setText(poi.titre)
         reviewInput.setText(poi.description)
         ratingBar.rating = poi.note.toFloat()
 
-        // Sélectionne automatiquement la catégorie actuelle du POI
         val typeIndex = types.indexOf(poi.type)
 
         if (typeIndex >= 0) {
@@ -73,7 +97,22 @@ class PoiEditDialog(
             spinner.setSelection(0)
         }
 
-        // Sauvegarde les informations saisies
+        photoGrid.layoutManager = GridLayoutManager(requireContext(), 3)
+
+        photoAdapter = PoiPhotoAdapter(selectedPhotos) { _ ->
+            Toast.makeText(
+                requireContext(),
+                "Photo sélectionnée",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        photoGrid.adapter = photoAdapter
+
+        imagephoto.setOnClickListener {
+            photoPickerLauncher.launch("image/*")
+        }
+
         saveBtn.setOnClickListener {
             val choix = spinner.selectedItem.toString()
 
@@ -92,7 +131,7 @@ class PoiEditDialog(
             poi.note = ratingBar.rating.toInt()
             poi.type = choix
 
-            onSave(poi)
+            onSave(poi, selectedPhotos)
 
             dismiss()
         }
