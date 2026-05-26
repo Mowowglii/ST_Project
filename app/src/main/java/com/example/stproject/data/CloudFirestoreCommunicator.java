@@ -104,6 +104,12 @@ public class CloudFirestoreCommunicator {
         return this.idvoyageencours;
     }
 
+    // Mathushan :
+    // affecte le voyage
+    public void definirVoyageConsulte(String voyageId) {
+        this.voyageidnow = voyageId;
+    }
+
 
 
     public void modification_dun_voyage(String desc, Integer note) {

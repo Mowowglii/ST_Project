@@ -47,7 +47,7 @@ public class POIManager {
         });
     }
     public void definirVoyageActif(String voyageid) {
-        cfCommunicator.demarrerNouveauVoyage(voyageid);
+        cfCommunicator.definirVoyageConsulte(voyageid);
     }
 
     public void modifierPOI(POI ancien, String nouveauTitre, String nouvelleDescription, String nouveauType, Integer nouvellenote, AjoutPOICallback callback) {
