@@ -38,10 +38,6 @@ public class CloudFirestoreCommunicator {
         void onSuccess();
         void onFailure(String erreur);
     }
-    public interface NomVoyageCallback {
-        void onSuccess(String voyageId);
-        void onError(String messageErreur);
-    }
 
     public interface VoyageInfoCallback {
         void onComplete(String description, int note);
@@ -103,14 +99,14 @@ public class CloudFirestoreCommunicator {
     }
     public void demarrerNouveauVoyage(String voyageId) {
         this.idvoyageencours = voyageId;
-        this.voyageidnow= voyageId
+        this.voyageidnow= voyageId;
     }
 
     public void arreterVoyageActif() {
         this.idvoyageencours = null;
     }
     public void mettreajourvoyageidnow(String voyageId){
-        this.voyageidnow= voyageId
+        this.voyageidnow= voyageId;
     }
     public String getIdVoyageEnCours() {
         return this.idvoyageencours;
@@ -139,6 +135,7 @@ public class CloudFirestoreCommunicator {
                 String description = documentSnapshot.getString("description");
 
                 Long noteLong = documentSnapshot.getLong("note");
+                int note = noteLong != null? noteLong.intValue() : 0;
                 callback.onComplete(description, note);
             })
             .addOnFailureListener(e ->
@@ -364,29 +361,30 @@ public class CloudFirestoreCommunicator {
                 Task<Void> deleteOriginalTask = CSCommunicator.deleteImage(path);
                 deletionTasks.add(deleteOriginalTask);
 
-            Task<QuerySnapshot> firestoreTask = db.collectionGroup("photos")
-                .whereEqualTo("photo_path", path)
-                .get();
+                Task<QuerySnapshot> firestoreTask = db.collectionGroup("photos")
+                        .whereEqualTo("photo_path", path)
+                        .get();
 
-            Task<Void> deleteFirestoreTask = firestoreTask.continueWithTask(task -> {
+                Task<Void> deleteFirestoreTask = firestoreTask.continueWithTask(task -> {
 
-            if (!task.isSuccessful()) {
-                throw task.getException();
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    WriteBatch batch = db.batch();
+
+                    for (DocumentSnapshot doc : task.getResult()) {
+                        batch.delete(doc.getReference());
+                    }
+
+                    return batch.commit();
+                });
+
+                deletionTasks.add(deleteFirestoreTask);
             }
-
-            WriteBatch batch = db.batch();
-
-            for (DocumentSnapshot doc : task.getResult()) {
-                batch.delete(doc.getReference());
-            }
-
-            return batch.commit();
-        });
-
-        tasks.add(deleteFirestoreTask);
         }
 
-        Tasks.whenAllComplete(tasks)
+        Tasks.whenAllComplete(deletionTasks)
             .addOnSuccessListener(results -> callback.onSuccess())
             .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
