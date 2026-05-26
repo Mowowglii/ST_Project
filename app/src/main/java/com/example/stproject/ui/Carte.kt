@@ -130,6 +130,9 @@ class Carte : AppCompatActivity() {
         pathManager = PathManager()
         pathManager.setCurrentTripId(tripId ?: "")
 
+        val photoManager = PhotoManager(this)
+        photoManager.setCurrentTripId(tripId ?: "")
+
         // Initialisation de la carte
         map = findViewById(R.id.map)
         map.setMultiTouchControls(true)
@@ -898,20 +901,48 @@ class Carte : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
 
             if (uris.isEmpty()) {
-                Toast.makeText(this, "Aucune photo sélectionnée", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "No photo selected",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@registerForActivityResult
             }
 
             val photoManager = PhotoManager(this)
+            photoManager.setCurrentTripId(tripId ?: "")
 
             val result = photoManager.analyzeSelectedPhotos(
                 uris,
                 LocationRepository.currentPath.value
             )
 
-            acceptedPhotos.addAll(
-                result.getAcceptedPhotos().map { it.photo }
-            )
+            result.getAcceptedPhotos().forEach { analysisResult ->
+
+                photoManager.savePhotoToTrip(
+                    analysisResult.photo,
+                    object : PhotoManager.PhotoCallback {
+
+                        override fun onSuccess(photo: Photo) {
+                            acceptedPhotos.add(photo)
+
+                            Toast.makeText(
+                                this@Carte,
+                                "Photo saved",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        override fun onError(error: String) {
+                            Toast.makeText(
+                                this@Carte,
+                                error,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                )
+            }
 
             manualValidationPhotos.addAll(
                 result.getManualValidationPhotos().map { it.photo }
@@ -923,9 +954,9 @@ class Carte : AppCompatActivity() {
 
             Toast.makeText(
                 this,
-                "Acceptées : ${acceptedPhotos.size} | " +
-                        "Hors trajet : ${outsideTripPhotos.size} | " +
-                        "À valider : ${manualValidationPhotos.size}",
+                "Accepted: ${result.getAcceptedPhotos().size} | " +
+                        "Outside trip: ${outsideTripPhotos.size} | " +
+                        "Manual validation: ${manualValidationPhotos.size}",
                 Toast.LENGTH_LONG
             ).show()
         }

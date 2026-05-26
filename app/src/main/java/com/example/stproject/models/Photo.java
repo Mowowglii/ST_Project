@@ -9,6 +9,7 @@ public class Photo {
     private long timeStamp;
     private double latitude;
     private double longitude;
+    private String imageUrl;
 
     public Photo() {}
 
@@ -61,5 +62,13 @@ public class Photo {
 
     public void setIdVoyage(String idVoyage) {
         this.associatedTripId = idVoyage;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }
