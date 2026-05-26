@@ -48,11 +48,8 @@ public class TripManager {
                             callback.onError("A trip with this name already exists");
                             return;
                         }
-
-                        String key = cfCommunicator.getTripKey();
-
                         Voyage trip = new Voyage(
-                                key,
+                                null,
                                 cleanTitle,
                                 "",
                                 null,
@@ -60,11 +57,9 @@ public class TripManager {
                         );
 
                         cfCommunicator.addTrip(trip);
-
-                        currentVoyageId = key;
                         currentVoyage = trip;
 
-                        callback.onSuccess(key, trip);
+                        callback.onSuccess(trip.getId(), trip);
                     }
 
                     @Override
