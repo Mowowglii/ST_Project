@@ -4,6 +4,8 @@ import com.example.stproject.data.CFCommunicator;
 import com.example.stproject.models.POI;
 import com.example.stproject.models.Voyage;
 
+import java.util.List;
+
 public class POIManager {
 
     private final CFCommunicator cfCommunicator;
@@ -16,8 +18,14 @@ public class POIManager {
     public void setCurrentTrip(Voyage trip) {
         this.currentTrip = trip;
     }
+
     public interface POICallback {
         void onSuccess(POI poi);
+        void onError(String error);
+    }
+
+    public interface POIsCallback {
+        void onSuccess(List<POI> pois);
         void onError(String error);
     }
 
@@ -82,16 +90,27 @@ public class POIManager {
         callback.onSuccess(poi);
     }
 
-    public void getPOIsForCurrentTrip(CFCommunicator.POIsCallback callback) {
+    public void getPOIsForCurrentTrip(POIsCallback callback) {
 
         if (currentTrip == null) {
-            callback.onFailure("No trip selected");
+            callback.onError("No trip selected");
             return;
         }
 
-        cfCommunicator.getPOIsForTrip(currentTrip, callback);
+        cfCommunicator.getPOIsForTrip(
+                currentTrip,
+                new CFCommunicator.POIsCallback() {
+
+                    @Override
+                    public void onSuccess(List<POI> pois) {
+                        callback.onSuccess(pois);
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
     }
-
-
-
 }

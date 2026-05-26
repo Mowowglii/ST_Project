@@ -16,7 +16,6 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.stproject.Manager.POIManager2
 import com.example.stproject.R
 import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.POI
@@ -43,6 +42,8 @@ import com.example.stproject.Manager.PhotoManager
 import com.example.stproject.models.Photo
 import android.view.MotionEvent
 import android.view.View
+import com.example.stproject.models.Voyage
+import com.example.stproject.Manager.POIManager
 
 class Carte : AppCompatActivity() {
 
@@ -72,7 +73,7 @@ class Carte : AppCompatActivity() {
     private var routeLine: Polyline? = null
 
     // Manager utilisé pour gérer les POI côté backend
-    private lateinit var poiManager: POIManager2
+    private lateinit var poiManager: POIManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,12 +91,21 @@ class Carte : AppCompatActivity() {
         tripName = intent.getStringExtra("trip_name")
 
         // Initialisation du manager POI
-        poiManager = POIManager2()
+        poiManager = POIManager()
+
+        val currentTrip = Voyage(
+            tripId ?: "",
+            tripName ?: "",
+            "",
+            null,
+            false,
+            mutableListOf(),
+            mutableListOf(),
+            mutableListOf()
+        )
 
         // Définit le voyage actif pour les ajouts, modifications et suppressions de POI
-        tripId?.let {
-            poiManager.definirVoyageActif(it)
-        }
+        poiManager.setCurrentTrip(currentTrip)
 
         // Initialisation de la carte
         map = findViewById(R.id.map)
@@ -111,7 +121,7 @@ class Carte : AppCompatActivity() {
 
         setupGPS()
         setupMapClickForPoi()
-        chargerPOIDuVoyage()
+        loadPOIsForTrip()
         chargerTraceVoyage()
         observerTraceTempsReel()
         initButtons()
@@ -159,7 +169,7 @@ class Carte : AppCompatActivity() {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
                 if (isSelectingPoiLocation && p != null) {
                     isSelectingPoiLocation = false
-                    ouvrirFormulairePoi(p.latitude, p.longitude)
+                    openPOIForm(p.latitude, p.longitude)
                     return true
                 }
 
@@ -337,7 +347,7 @@ class Carte : AppCompatActivity() {
     }
 
     // Affiche un marqueur POI sur la carte
-    private fun afficherMarkerPOI(poi: POI) {
+    private fun displayPOIMarker(poi: POI) {
         val marker = Marker(map)
 
         marker.position = GeoPoint(
@@ -362,7 +372,7 @@ class Carte : AppCompatActivity() {
     }
 
     // Recharge la liste des POI affichée dans le menu latéral
-    private fun refreshPoiMenu() {
+    private fun refreshPOIMenu() {
 
         val menuRecyclerView =
             findViewById<RecyclerView>(R.id.menuRecyclerView)
@@ -408,47 +418,39 @@ class Carte : AppCompatActivity() {
         ).show()
     }
 
-    private fun ouvrirFormulairePoi(latitude: Double, longitude: Double) {
+    private fun openPOIForm(latitude: Double, longitude: Double) {
+
         val poi = POI(
             "POI",
             "",
             0,
             latitude,
             longitude,
-            "autre"
+            "other"
         )
 
         PoiEditDialog(poi) { updatedPoi ->
 
-            tripId?.let {
-                poiManager.definirVoyageActif(it)
-            }
-
-            poiManager.ajouterPOI(
-                updatedPoi.titre,
-                updatedPoi.description,
-                updatedPoi.note,
-                updatedPoi.latitude,
-                updatedPoi.longitude,
-                updatedPoi.type,
-                object : POIManager2.AjoutPOICallback {
+            poiManager.addPOI(
+                updatedPoi,
+                object : POIManager.POICallback {
 
                     override fun onSuccess(poi: POI) {
                         poiList.add(poi)
-                        afficherMarkerPOI(poi)
-                        refreshPoiMenu()
+                        displayPOIMarker(poi)
+                        refreshPOIMenu()
 
                         Toast.makeText(
                             this@Carte,
-                            "POI ajouté",
+                            "POI added",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
 
-                    override fun onError(message: String) {
+                    override fun onError(error: String) {
                         Toast.makeText(
                             this@Carte,
-                            message,
+                            error,
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -474,20 +476,21 @@ class Carte : AppCompatActivity() {
     private fun showModifierPOIDialog(poi: POI, marker: Marker) {
         PoiEditDialog(poi) { updatedPoi ->
 
-            poiManager.modifierPOI(
+            poiManager.updatePOI(
+                updatedPoi,
                 poi,
                 updatedPoi.titre,
                 updatedPoi.description,
                 updatedPoi.type,
                 updatedPoi.note,
-                object : POIManager2.AjoutPOICallback {
+                object : POIManager.POICallback {
 
                     override fun onSuccess(poiModifie: POI) {
                         marker.title = poiModifie.titre
                         marker.relatedObject = poiModifie
 
                         map.invalidate()
-                        refreshPoiMenu()
+                        refreshPOIMenu()
 
                         Toast.makeText(
                             this@Carte,
@@ -510,15 +513,15 @@ class Carte : AppCompatActivity() {
 
     // Supprime un POI du backend et de la carte
     private fun supprimerPOI(poi: POI, marker: Marker) {
-        poiManager.supprimerPOI(
+        poiManager.deletePOI(
             poi,
-            object : POIManager2.AjoutPOICallback {
+            object : POIManager.POICallback {
 
                 override fun onSuccess(poi: POI) {
                     poiList.remove(poi)
                     map.overlays.remove(marker)
                     map.invalidate()
-                    refreshPoiMenu()
+                    refreshPOIMenu()
 
                     Toast.makeText(
                         this@Carte,
@@ -558,34 +561,31 @@ class Carte : AppCompatActivity() {
     }
 
     // Charge les POI du voyage actuel depuis Firestore
-    private fun chargerPOIDuVoyage() {
-        tripId?.let { voyageId ->
+    private fun loadPOIsForTrip() {
 
-            poiManager.recupererPOIDuVoyage(
-                voyageId,
-                object : POIManager2.ListePOICallback {
+        poiManager.getPOIsForCurrentTrip(
+            object : POIManager.POIsCallback {
 
-                    override fun onSuccess(pois: List<POI>) {
-                        poiList.clear()
-                        poiList.addAll(pois)
+                override fun onSuccess(pois: List<POI>) {
+                    poiList.clear()
+                    poiList.addAll(pois)
 
-                        for (poi in pois) {
-                            afficherMarkerPOI(poi)
-                        }
-
-                        refreshPoiMenu()
+                    for (poi in pois) {
+                        displayPOIMarker(poi)
                     }
 
-                    override fun onError(message: String) {
-                        Toast.makeText(
-                            this@Carte,
-                            message,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                    refreshPOIMenu()
                 }
-            )
-        }
+
+                override fun onError(error: String) {
+                    Toast.makeText(
+                        this@Carte,
+                        error,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
     }
 
     private fun getPhotosForPoi(poi: POI): List<Photo> {
