@@ -38,6 +38,15 @@ public class CloudFirestoreCommunicator {
         void onSuccess();
         void onFailure(String erreur);
     }
+    public interface NomVoyageCallback {
+        void onSuccess(String voyageId);
+        void onError(String messageErreur);
+    }
+
+    public interface VoyageInfoCallback {
+        void onComplete(String description, int note);
+        void onError(String error);
+    }
 
     public interface POICallback {
         void onComplete(List<POI> pois);
@@ -94,12 +103,15 @@ public class CloudFirestoreCommunicator {
     }
     public void demarrerNouveauVoyage(String voyageId) {
         this.idvoyageencours = voyageId;
+        this.voyageidnow= voyageId
     }
 
     public void arreterVoyageActif() {
         this.idvoyageencours = null;
     }
-    
+    public void mettreajourvoyageidnow(String voyageId){
+        this.voyageidnow= voyageId
+    }
     public String getIdVoyageEnCours() {
         return this.idvoyageencours;
     }
@@ -108,6 +120,29 @@ public class CloudFirestoreCommunicator {
     // affecte le voyage
     public void definirVoyageConsulte(String voyageId) {
         this.voyageidnow = voyageId;
+    }
+
+
+
+    public void recupererDescriptionEtNoteVoyage(VoyageInfoCallback callback) {
+
+        db.collection("voyages")
+            .document(voyageidnow)
+            .get()
+            .addOnSuccessListener(documentSnapshot -> {
+
+                if (!documentSnapshot.exists()) {
+                    callback.onError("Voyage introuvable.");
+                    return;
+                }
+
+                String description = documentSnapshot.getString("description");
+
+                Long noteLong = documentSnapshot.getLong("note");
+                callback.onComplete(description, note);
+            })
+            .addOnFailureListener(e ->
+                    callback.onError(e.getMessage()));
     }
 
 
@@ -328,33 +363,61 @@ public class CloudFirestoreCommunicator {
             if (path != null && !path.isEmpty()) {
                 Task<Void> deleteOriginalTask = CSCommunicator.deleteImage(path);
                 deletionTasks.add(deleteOriginalTask);
+
+            Task<QuerySnapshot> firestoreTask = db.collectionGroup("photos")
+                .whereEqualTo("photo_path", path)
+                .get();
+
+            Task<Void> deleteFirestoreTask = firestoreTask.continueWithTask(task -> {
+
+            if (!task.isSuccessful()) {
+                throw task.getException();
             }
+
+            WriteBatch batch = db.batch();
+
+            for (DocumentSnapshot doc : task.getResult()) {
+                batch.delete(doc.getReference());
+            }
+
+            return batch.commit();
+        });
+
+        tasks.add(deleteFirestoreTask);
         }
 
-        Tasks.whenAll(deletionTasks)  //verifier que deletionTasks a bien le meme nombre d elementd que photo_path
-            .addOnSuccessListener(aVoid -> callback.onSuccess())
+        Tasks.whenAllComplete(tasks)
+            .addOnSuccessListener(results -> callback.onSuccess())
             .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
 
     public void recup_photo_pour_une_liste_de_voyage(List<String> ids, PhotoCallback callback) {
-            if (ids.isEmpty()) {
-                callback.onPhotosRecuperees(new ArrayList<>());
-                return;
-            }
+        if (ids.isEmpty()) {
+            callback.onPhotosRecuperees(new ArrayList<>());
+            return;
+        }
 
-            db.collection("photos").whereIn("idvoyage", ids).get().addOnSuccessListener(docs -> {
-                    List<String> listephotoPaths = new ArrayList<>();
-                    for (DocumentSnapshot d : docs) {
-                        String path = d.getString("photo_path"); 
-                         if (path != null) {
-                            listephotoPaths.add(path);
-                        }
+        db.collectionGroup("photos")
+            .whereIn("idvoyage", ids)
+            .get()
+            .addOnSuccessListener(docs -> {
+
+                List<String> listephotoPaths = new ArrayList<>();
+
+                for (DocumentSnapshot d : docs) {
+
+                    String path = d.getString("photo_path");
+
+                    if (path != null) {
+                        listephotoPaths.add(path);
                     }
+                }
+
                 callback.onPhotosRecuperees(listephotoPaths);
-            }).addOnFailureListener(e -> {
-                callback.onFailure(e.getMessage());
-        });
+
+            }).addOnFailureListener(e ->
+                    callback.onFailure(e.getMessage()));
     }
 
     // Partie Path
