@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/photoMiniature"
+    android:layout_width="64dp"
+    android:layout_height="64dp"
+    android:layout_marginEnd="8dp"
+    android:scaleType="centerCrop"
+    android:background="#444444"
+    android:src="@drawable/ic_photo"
+    android:contentDescription="Photo du POI" />

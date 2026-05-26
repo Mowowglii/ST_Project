@@ -361,16 +361,38 @@ class Carte : AppCompatActivity() {
 
     // Recharge la liste des POI affichée dans le menu latéral
     private fun refreshPoiMenu() {
-        val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
-        val menuTitle = findViewById<TextView>(R.id.menuTitle)
-        val menuAddButton = findViewById<Button>(R.id.menuAddButton)
+
+        val menuRecyclerView =
+            findViewById<RecyclerView>(R.id.menuRecyclerView)
+
+        val menuTitle =
+            findViewById<TextView>(R.id.menuTitle)
+
+        val menuAddButton =
+            findViewById<Button>(R.id.menuAddButton)
 
         menuTitle.text = "Mes POI"
+
         menuAddButton.text = "+ Ajouter un POI"
 
-        menuRecyclerView.adapter = PoiAdapter(poiList) { poi ->
-            Toast.makeText(this, poi.titre, Toast.LENGTH_SHORT).show()
-        }
+        // Affichage des POI avec leurs photos associées
+        menuRecyclerView.adapter = PoiAdapter(
+
+            poiList,
+
+            // Retourne les photos liées au POI
+            { poi -> getPhotosForPoi(poi) },
+
+            // Action lors du clic sur un POI
+            { poi ->
+
+                Toast.makeText(
+                    this,
+                    poi.titre,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
     }
 
     // Ouvre le formulaire de création d'un POI
@@ -564,6 +586,12 @@ class Carte : AppCompatActivity() {
         }
     }
 
+    private fun getPhotosForPoi(poi: POI): List<Photo> {
+        return acceptedPhotos.filter { photo ->
+            photo.associatedPOI == poi
+        }
+    }
+
     // Initialisation des boutons de l'interface
     private fun initButtons() {
         val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
@@ -591,13 +619,30 @@ class Carte : AppCompatActivity() {
         }
 
         // Onglet POI du menu latéral
+        // Onglet POI du menu latéral
         findViewById<TextView>(R.id.tabPoi).setOnClickListener {
+
             menuTitle.text = "Mes POI"
             menuAddButton.text = "+ Ajouter un POI"
 
-            menuRecyclerView.adapter = PoiAdapter(poiList) { poi ->
-                Toast.makeText(this, poi.titre, Toast.LENGTH_SHORT).show()
-            }
+            // Affichage des POI avec leurs photos associées
+            menuRecyclerView.adapter = PoiAdapter(
+
+                poiList,
+
+                // Retourne les photos liées au POI
+                { poi -> getPhotosForPoi(poi) },
+
+                // Clique sur un POI
+                { poi ->
+
+                    Toast.makeText(
+                        this,
+                        poi.titre,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            )
 
             menuAddButton.setOnClickListener {
                 addPOIWithEditDialog()
