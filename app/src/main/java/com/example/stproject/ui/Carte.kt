@@ -16,9 +16,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.stproject.Manager.POIManager
 import com.example.stproject.R
-import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.POI
 import com.example.stproject.service.LocationRecovererService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -43,6 +41,9 @@ import com.example.stproject.Manager.PhotoManager
 import com.example.stproject.models.Photo
 import android.view.MotionEvent
 import android.view.View
+import com.example.stproject.models.Voyage
+import com.example.stproject.Manager.POIManager
+import com.example.stproject.Manager.PathManager
 
 class Carte : AppCompatActivity() {
 
@@ -73,6 +74,8 @@ class Carte : AppCompatActivity() {
 
     // Manager utilisé pour gérer les POI côté backend
     private lateinit var poiManager: POIManager
+
+    private lateinit var pathManager: PathManager
 
     // Image choisie pour le voyage terminé
     private var selectedTripImageUri: android.net.Uri? = null
@@ -113,10 +116,19 @@ class Carte : AppCompatActivity() {
         // Initialisation du manager POI
         poiManager = POIManager()
 
+        val currentTrip = Voyage(
+            tripId ?: "",
+            tripName ?: "",
+            "",
+            null,
+            false,
+        )
+
         // Définit le voyage actif pour les ajouts, modifications et suppressions de POI
-        tripId?.let {
-            poiManager.definirVoyageActif(it)
-        }
+        poiManager.setCurrentTrip(currentTrip)
+        // Pour chemin
+        pathManager = PathManager()
+        pathManager.setCurrentTripId(tripId ?: "")
 
         // Initialisation de la carte
         map = findViewById(R.id.map)
@@ -132,9 +144,9 @@ class Carte : AppCompatActivity() {
 
         setupGPS()
         setupMapClickForPoi()
-        chargerPOIDuVoyage()
-        chargerTraceVoyage()
-        observerTraceTempsReel()
+        loadPOIsForTrip()
+        loadTripPath()
+        observeRealtimePath()
         initButtons()
         updateTripStatus()
     }
@@ -180,7 +192,7 @@ class Carte : AppCompatActivity() {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
                 if (isSelectingPoiLocation && p != null) {
                     isSelectingPoiLocation = false
-                    ouvrirFormulairePoi(p.latitude, p.longitude)
+                    openPOIForm(p.latitude, p.longitude)
                     return true
                 }
 
@@ -203,72 +215,68 @@ class Carte : AppCompatActivity() {
     }
 
     // Charge le tracé déjà enregistré du voyage depuis Firestore
-    private fun chargerTraceVoyage() {
-        tripId?.let { voyageId ->
+    private fun loadTripPath() {
 
-            val communicator = CloudFirestoreCommunicator()
+        pathManager.getPathForCurrentTrip(
+            object : PathManager.PathCallback {
 
-            communicator.recuperer_path_voyage(
-                voyageId,
-                object : CloudFirestoreCommunicator.PathCallback {
+                override fun onSuccess(points: List<Map<String, Any>>) {
 
-                    override fun onComplete(path: List<Map<String, Any>>) {
-                        val locations = mutableListOf<Location>()
+                    val locations = mutableListOf<Location>()
 
-                        for (point in path) {
-                            val lat = point["latitude"] as? Double
-                            val lon = point["longitude"] as? Double
+                    for (point in points) {
+                        val lat = point["latitude"] as? Double
+                        val lon = point["longitude"] as? Double
 
-                            if (lat != null && lon != null) {
-                                val location = Location("firestore")
-                                location.latitude = lat
-                                location.longitude = lon
-                                locations.add(location)
-                            }
-                        }
-
-                        val locationsReduites =
-                            ReductionListPoint.douglasPeucker(locations)
-
-                        val points = locationsReduites.map { location ->
-                            GeoPoint(location.latitude, location.longitude)
-                        }
-
-                        if (points.isNotEmpty()) {
-                            routeLine?.let {
-                                map.overlays.remove(it)
-                            }
-
-                            routeLine = Polyline().apply {
-                                setPoints(points)
-                                styliserTrace(this)
-                            }
-
-                            map.overlays.add(routeLine)
-                            map.invalidate()
+                        if (lat != null && lon != null) {
+                            val location = Location("firestore")
+                            location.latitude = lat
+                            location.longitude = lon
+                            locations.add(location)
                         }
                     }
 
-                    override fun onError(error: String) {
-                        Toast.makeText(
-                            this@Carte,
-                            error,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    val reducedLocations =
+                        ReductionListPoint.douglasPeucker(locations)
+
+                    val geoPoints = reducedLocations.map { location ->
+                        GeoPoint(location.latitude, location.longitude)
+                    }
+
+                    if (geoPoints.isNotEmpty()) {
+                        routeLine?.let {
+                            map.overlays.remove(it)
+                        }
+
+                        routeLine = Polyline().apply {
+                            setPoints(geoPoints)
+                            styliserTrace(this)
+                        }
+
+                        map.overlays.add(routeLine)
+                        map.invalidate()
                     }
                 }
-            )
-        }
+
+                override fun onError(error: String) {
+                    Toast.makeText(
+                        this@Carte,
+                        error,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
     }
 
-    private fun observerTraceTempsReel() {
+    private fun observeRealtimePath() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 LocationRepository.currentPath.collect { locations ->
 
                     if (locations.isEmpty()) return@collect
 
-                    val points = locations.map { location ->
+                    val geoPoints = locations.map { location ->
                         GeoPoint(location.latitude, location.longitude)
                     }
 
@@ -280,7 +288,7 @@ class Carte : AppCompatActivity() {
                         map.overlays.add(routeLine)
                     }
 
-                    routeLine?.setPoints(points)
+                    routeLine?.setPoints(geoPoints)
 
                     val lastLocation = locations.last()
                     val lastPoint = GeoPoint(
@@ -358,7 +366,7 @@ class Carte : AppCompatActivity() {
     }
 
     // Affiche un marqueur POI sur la carte
-    private fun afficherMarkerPOI(poi: POI) {
+    private fun displayPOIMarker(poi: POI) {
         val marker = Marker(map)
 
         marker.position = GeoPoint(
@@ -383,7 +391,7 @@ class Carte : AppCompatActivity() {
     }
 
     // Recharge la liste des POI affichée dans le menu latéral
-    private fun refreshPoiMenu() {
+    private fun refreshPOIMenu() {
 
         val menuRecyclerView =
             findViewById<RecyclerView>(R.id.menuRecyclerView)
@@ -429,59 +437,39 @@ class Carte : AppCompatActivity() {
         ).show()
     }
 
-    private fun ouvrirFormulairePoi(latitude: Double, longitude: Double) {
+    private fun openPOIForm(latitude: Double, longitude: Double) {
+
         val poi = POI(
             "POI",
             "",
             0,
             latitude,
             longitude,
-            "autre"
+            "other"
         )
 
-        PoiEditDialog(poi) { updatedPoi, photos ->
+        PoiEditDialog(poi) { updatedPoi ->
 
-            tripId?.let {
-                poiManager.definirVoyageActif(it)
-            }
-
-            poiManager.ajouterPOI(
-                updatedPoi.titre,
-                updatedPoi.description,
-                updatedPoi.note,
-                updatedPoi.latitude,
-                updatedPoi.longitude,
-                updatedPoi.type,
-                object : POIManager.AjoutPOICallback {
+            poiManager.addPOI(
+                updatedPoi,
+                object : POIManager.POICallback {
 
                     override fun onSuccess(poi: POI) {
-
                         poiList.add(poi)
-
-                        // Associe les photos au POI créé
-                        photos.forEach { photo ->
-
-                            photo.associatedPOI = poi
-                        }
-
-                        // Ajoute les photos à la liste globale
-                        acceptedPhotos.addAll(photos)
-
-                        afficherMarkerPOI(poi)
-
-                        refreshPoiMenu()
+                        displayPOIMarker(poi)
+                        refreshPOIMenu()
 
                         Toast.makeText(
                             this@Carte,
-                            "POI ajouté",
+                            "POI added",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
 
-                    override fun onError(message: String) {
+                    override fun onError(error: String) {
                         Toast.makeText(
                             this@Carte,
-                            message,
+                            error,
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -505,22 +493,18 @@ class Carte : AppCompatActivity() {
 
     // Ouvre le formulaire de modification d'un POI
     private fun showModifierPOIDialog(poi: POI, marker: Marker) {
-        PoiEditDialog(poi) { updatedPoi, _ ->
+        PoiEditDialog(poi) { updatedPoi ->
 
-            poiManager.modifierPOI(
-                poi,
-                updatedPoi.titre,
-                updatedPoi.description,
-                updatedPoi.type,
-                updatedPoi.note,
-                object : POIManager.AjoutPOICallback {
+            poiManager.updatePOI(
+                updatedPoi,
+                object : POIManager.POICallback {
 
                     override fun onSuccess(poiModifie: POI) {
                         marker.title = poiModifie.titre
                         marker.relatedObject = poiModifie
 
                         map.invalidate()
-                        refreshPoiMenu()
+                        refreshPOIMenu()
 
                         Toast.makeText(
                             this@Carte,
@@ -542,28 +526,28 @@ class Carte : AppCompatActivity() {
     }
 
     // Supprime un POI du backend et de la carte
-    private fun supprimerPOI(poi: POI, marker: Marker) {
-        poiManager.supprimerPOI(
+    private fun DeletePOI(poi: POI, marker: Marker) {
+        poiManager.deletePOI(
             poi,
-            object : POIManager.AjoutPOICallback {
+            object : POIManager.POICallback {
 
                 override fun onSuccess(poi: POI) {
                     poiList.remove(poi)
                     map.overlays.remove(marker)
                     map.invalidate()
-                    refreshPoiMenu()
+                    refreshPOIMenu()
 
                     Toast.makeText(
                         this@Carte,
-                        "POI supprimé",
+                        "POI deleted",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
 
-                override fun onError(message: String) {
+                override fun onError(error: String) {
                     Toast.makeText(
                         this@Carte,
-                        message,
+                        error,
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -584,41 +568,38 @@ class Carte : AppCompatActivity() {
                 showModifierPOIDialog(poi, marker)
             }
             .setNegativeButton("Supprimer") { _, _ ->
-                supprimerPOI(poi, marker)
+                DeletePOI(poi, marker)
             }
             .setNeutralButton("Fermer", null)
             .show()
     }
 
     // Charge les POI du voyage actuel depuis Firestore
-    private fun chargerPOIDuVoyage() {
-        tripId?.let { voyageId ->
+    private fun loadPOIsForTrip() {
 
-            poiManager.recupererPOIDuVoyage(
-                voyageId,
-                object : POIManager.ListePOICallback {
+        poiManager.getPOIsForCurrentTrip(
+            object : POIManager.POIsCallback {
 
-                    override fun onSuccess(pois: List<POI>) {
-                        poiList.clear()
-                        poiList.addAll(pois)
+                override fun onSuccess(pois: List<POI>) {
+                    poiList.clear()
+                    poiList.addAll(pois)
 
-                        for (poi in pois) {
-                            afficherMarkerPOI(poi)
-                        }
-
-                        refreshPoiMenu()
+                    for (poi in pois) {
+                        displayPOIMarker(poi)
                     }
 
-                    override fun onError(message: String) {
-                        Toast.makeText(
-                            this@Carte,
-                            message,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                    refreshPOIMenu()
                 }
-            )
-        }
+
+                override fun onError(error: String) {
+                    Toast.makeText(
+                        this@Carte,
+                        error,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
     }
 
     private fun getPhotosForPoi(poi: POI): List<Photo> {
@@ -887,7 +868,8 @@ class Carte : AppCompatActivity() {
 
         btnFinish.setOnClickListener {
             dialog.dismiss()
-            afficherDialogNotationVoyage()
+
+            goToHome()
         }
 
         btnDelete.setOnClickListener {

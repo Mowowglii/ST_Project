@@ -13,10 +13,6 @@ public class Voyage {
     // Indique si le voyage est terminé ou encore en cours
     private boolean termine = false;
 
-    private List<POI> listePois;
-    private List<String> listePhotos;
-    private List<Map<String, Object>> path;
-
     public Voyage() {}
 
     public Voyage(
@@ -24,10 +20,7 @@ public class Voyage {
             String titre,
             String description,
             Integer note,
-            boolean termine,
-            List<POI> listePois,
-            List<String> listePhotos,
-            List<Map<String, Object>> path
+            boolean termine
     ) {
 
         this.id = id;
@@ -35,9 +28,6 @@ public class Voyage {
         this.description = description;
         this.note = note;
         this.termine = termine;
-        this.listePois = listePois;
-        this.listePhotos = listePhotos;
-        this.path = path;
     }
 
     public String getId() {
@@ -78,29 +68,5 @@ public class Voyage {
 
     public void setTermine(boolean termine) {
         this.termine = termine;
-    }
-
-    public List<POI> getListePois() {
-        return listePois;
-    }
-
-    public void setListePois(List<POI> listePois) {
-        this.listePois = listePois;
-    }
-
-    public List<String> getListePhotos() {
-        return listePhotos;
-    }
-
-    public void setListePhotos(List<String> listePhotos) {
-        this.listePhotos = listePhotos;
-    }
-
-    public List<Map<String, Object>> getPath() {
-        return this.path;
-    }
-
-    public void setPath(List<Map<String, Object>> path) {
-        this.path = path;
     }
 }

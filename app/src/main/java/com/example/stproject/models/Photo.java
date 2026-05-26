@@ -1,32 +1,20 @@
 package com.example.stproject.models;
 
-import com.google.firebase.storage.StorageReference;
 import android.net.Uri;
 
 public class Photo {
-    private StorageReference photoRef;
     private Uri imageURI;
     private String associatedTripId;
     private POI associatedPOI;
+    private long timeStamp;
     private double latitude;
     private double longitude;
-    private String idVoyage;
 
     public Photo() {}
 
-    public Photo(StorageReference refPhoto, Uri uriPhoto){
-        this.photoRef = refPhoto;
+    public Photo(Uri uriPhoto){
         this.imageURI = uriPhoto;
     }
-
-    public StorageReference getRef(){
-        return this.photoRef;
-    }
-
-    public void setRef(StorageReference photoRef) {
-        this.photoRef = photoRef;
-    }
-
     public Uri getImageURI() {
         return imageURI;
     }
@@ -68,10 +56,10 @@ public class Photo {
     }
 
     public String getIdVoyage() {
-        return idVoyage;
+        return associatedTripId;
     }
 
     public void setIdVoyage(String idVoyage) {
-        this.idVoyage = idVoyage;
+        this.associatedTripId = idVoyage;
     }
 }
