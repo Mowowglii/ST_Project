@@ -126,7 +126,7 @@ public class VoyageManager {
         }
 
         // Définit le voyage à supprimer comme voyage courant
-        cfCommunicator.demarrerNouveauVoyage(voyage.getId());
+        cfCommunicator.definirVoyageConsulte(voyage.getId());
 
         // Appelle la suppression complète dans CloudFirestoreCommunicator
         cfCommunicator.supp_voyage(new CloudFirestoreCommunicator.PhotoCallback() {
