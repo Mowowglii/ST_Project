@@ -56,34 +56,38 @@ class Consultation : AppCompatActivity() {
         // Onglet des voyages en cours
         tabEnCours.setOnClickListener {
             afficherTermines = false
-            appliquerFiltreVoyages()
+            applyTripFilter()
         }
 
         // Onglet des voyages terminés
         tabTermines.setOnClickListener {
             afficherTermines = true
-            appliquerFiltreVoyages()
+            applyTripFilter()
         }
 
         // Charge les voyages
-        chargerVoyages()
+        loadTrips()
     }
 
-    private fun chargerVoyages() {
-        tripManager.recupererTousLesVoyages(
-            object : TripManager.ListeVoyagesCallback {
+    private fun loadTrips() {
 
-                override fun onSuccess(voyagesRecuperes: List<Voyage>) {
+        tripManager.getAllTrips(
+
+            object : TripManager.TripsCallback {
+
+                override fun onSuccess(trips: List<Voyage>) {
+
                     voyages.clear()
-                    voyages.addAll(voyagesRecuperes)
+                    voyages.addAll(trips)
 
-                    appliquerFiltreVoyages()
+                    applyTripFilter()
                 }
 
-                override fun onError(message: String) {
+                override fun onError(error: String) {
+
                     Toast.makeText(
                         this@Consultation,
-                        message,
+                        error,
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -91,7 +95,7 @@ class Consultation : AppCompatActivity() {
         )
     }
 
-    private fun appliquerFiltreVoyages() {
+    private fun applyTripFilter() {
         voyagesAffiches.clear()
 
         for (voyage in voyages) {
@@ -161,9 +165,9 @@ class Consultation : AppCompatActivity() {
                             .setMessage("Voulez-vous vraiment supprimer ce voyage ?")
                             .setPositiveButton("Supprimer") { _, _ ->
 
-                                tripManager.supprimerVoyage(
+                                tripManager.deleteTrip(
                                     voyage,
-                                    object : TripManager.SuppressionVoyageCallback {
+                                    object : TripManager.TripCallback {
 
                                         override fun onSuccess() {
                                             // Retire le voyage de la liste complète et de la liste affichée
@@ -178,7 +182,7 @@ class Consultation : AppCompatActivity() {
                                                 Toast.LENGTH_SHORT
                                             ).show()
 
-                                            appliquerFiltreVoyages()
+                                            applyTripFilter()
                                         }
 
                                         override fun onError(message: String) {
