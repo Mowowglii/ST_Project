@@ -33,6 +33,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.stproject.data.LocationRepository
 import kotlinx.coroutines.launch
+import android.location.Location
+import com.example.stproject.utils.ReductionListPoint
 
 class Carte : AppCompatActivity() {
 
@@ -146,15 +148,25 @@ class Carte : AppCompatActivity() {
                 object : CloudFirestoreCommunicator.PathCallback {
 
                     override fun onComplete(path: List<Map<String, Any>>) {
-                        val points = mutableListOf<GeoPoint>()
+                        val locations = mutableListOf<Location>()
 
                         for (point in path) {
                             val lat = point["latitude"] as? Double
                             val lon = point["longitude"] as? Double
 
                             if (lat != null && lon != null) {
-                                points.add(GeoPoint(lat, lon))
+                                val location = Location("firestore")
+                                location.latitude = lat
+                                location.longitude = lon
+                                locations.add(location)
                             }
+                        }
+
+                        val locationsReduites =
+                            ReductionListPoint.douglasPeucker(locations)
+
+                        val points = locationsReduites.map { location ->
+                            GeoPoint(location.latitude, location.longitude)
                         }
 
                         if (points.isNotEmpty()) {
