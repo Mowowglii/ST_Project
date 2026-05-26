@@ -38,6 +38,10 @@ public class CloudFirestoreCommunicator {
         void onSuccess();
         void onFailure(String erreur);
     }
+    public interface NomVoyageCallback {
+        void onSuccess(String voyageId);
+        void onError(String messageErreur);
+    }
 
     public interface VoyageInfoCallback {
         void onComplete(String description, int note);
@@ -99,15 +103,20 @@ public class CloudFirestoreCommunicator {
     }
     public void demarrerNouveauVoyage(String voyageId) {
         this.idvoyageencours = voyageId;
+        this.voyageidnow= voyageId
     }
 
     public void arreterVoyageActif() {
         this.idvoyageencours = null;
     }
-    
+    public void mettreajourvoyageidnow(String voyageId){
+        this.voyageidnow= voyageId
+    }
     public String getIdVoyageEnCours() {
         return this.idvoyageencours;
     }
+
+
 
     public void recupererDescriptionEtNoteVoyage(VoyageInfoCallback callback) {
 
