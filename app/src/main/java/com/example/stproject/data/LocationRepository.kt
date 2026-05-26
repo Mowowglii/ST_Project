@@ -12,23 +12,84 @@ import kotlinx.coroutines.flow.update
 
 object LocationRepository {
 
-    // Liste privée et modifiable des points GPS du trajet en cours
-    private val _currentPath = MutableStateFlow<List<Location>>(emptyList())
+    // Distance minimale entre deux points gardés.
+    // Si l'utilisateur bouge de moins de 5 mètres,
+    // le nouveau point est ignoré pour éviter les doublons.
+    private const val DISTANCE_MIN_METRES = 5f
 
-    // Version publique en lecture seule.
-    // La carte peut l'observer, mais ne peut pas la modifier directement.
-    val currentPath: StateFlow<List<Location>> = _currentPath.asStateFlow()
+    // Précision GPS maximale acceptée.
+    // Un point avec une précision trop mauvaise est ignoré.
+    private const val PRECISION_MAX_METRES = 25f
 
-    // Ajoute plusieurs nouvelles positions GPS au trajet actuel.
-    // Cette fonction sera appelée par le service de localisation.
+
+    // Liste privée contenant le trajet actuel.
+    // MutableStateFlow permet de modifier les données.
+    private val _currentPath =
+        MutableStateFlow<List<Location>>(emptyList())
+
+
+    // Version publique du Flow.
+    // Les écrans peuvent observer les données
+    // mais ne peuvent pas modifier la liste directement.
+    val currentPath: StateFlow<List<Location>> =
+        _currentPath.asStateFlow()
+
+
+    // Fonction appelée quand le service GPS reçoit de nouvelles positions.
     fun addLocations(locations: List<Location>) {
+
+        // update récupère l'ancienne liste du trajet
+        // puis retourne une nouvelle liste mise à jour.
         _currentPath.update { oldList ->
-            oldList + locations
+
+            // Création d'une copie modifiable du trajet actuel.
+            val newList = oldList.toMutableList()
+
+            // Dernier point conservé dans le trajet.
+            // Sert à comparer les distances.
+            var lastKeptLocation = newList.lastOrNull()
+
+            // Parcours des nouvelles positions GPS reçues.
+            for (location in locations) {
+
+                // Ignore les points GPS trop imprécis.
+                if (
+                    location.hasAccuracy() &&
+                    location.accuracy > PRECISION_MAX_METRES
+                ) {
+                    continue
+                }
+
+                // Si aucun point n'existe encore,
+                // on garde automatiquement le premier.
+                if (lastKeptLocation == null) {
+                    newList.add(location)
+                    lastKeptLocation = location
+                    continue
+                }
+
+                // Distance entre le dernier point gardé
+                // et le nouveau point GPS.
+                val distance =
+                    lastKeptLocation.distanceTo(location)
+
+                // Garde le point seulement si la distance
+                // minimale est respectée.
+                if (distance >= DISTANCE_MIN_METRES) {
+                    newList.add(location)
+                    lastKeptLocation = location
+                }
+            }
+
+            // Retourne la nouvelle liste filtrée.
+            // Le Flow prévient automatiquement la carte.
+            newList
         }
     }
 
-    // Vide le trajet en mémoire.
-    // À appeler au début d'un nouveau voyage.
+
+    // Réinitialise complètement le trajet actuel.
+    // Utilisé au début d'un nouveau voyage.
     fun clearPath() {
         _currentPath.value = emptyList()
     }

@@ -116,6 +116,16 @@ class Carte : AppCompatActivity() {
         locationOverlay = MyLocationNewOverlay(map)
         locationOverlay.enableMyLocation()
         map.overlays.add(locationOverlay)
+
+        // Centre la carte sur la première position GPS disponible
+        locationOverlay.runOnFirstFix {
+            runOnUiThread {
+                locationOverlay.myLocation?.let { position ->
+                    map.controller.setZoom(18.0)
+                    map.controller.setCenter(position)
+                }
+            }
+        }
     }
 
     // Démarrage du voyage
