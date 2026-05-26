@@ -74,6 +74,27 @@ class Carte : AppCompatActivity() {
     // Manager utilisé pour gérer les POI côté backend
     private lateinit var poiManager: POIManager
 
+    // Image choisie pour le voyage terminé
+    private var selectedTripImageUri: android.net.Uri? = null
+
+    // ImageView du dialog de fin de voyage
+    private var voyageImageView: ImageView? = null
+
+    // Ouvre la galerie pour choisir une image du voyage
+    private val voyageImagePickerLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.GetContent()
+        ) { uri ->
+
+            if (uri != null) {
+
+                selectedTripImageUri = uri
+
+                // Remplace l'image par défaut
+                voyageImageView?.setImageURI(uri)
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -791,6 +812,55 @@ class Carte : AppCompatActivity() {
             .show()
     }
 
+
+
+    private fun afficherDialogNotationVoyage() {
+        val dialogView = layoutInflater.inflate(R.layout.edit_trip, null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        val voyageNameInput = dialogView.findViewById<TextView>(R.id.editTripTitle)
+        val btnChooseImage = dialogView.findViewById<Button>(R.id.btnChooseTripImage)
+        val btnSave = dialogView.findViewById<Button>(R.id.btnSaveTripEdit)
+
+        voyageImageView = dialogView.findViewById(R.id.tripEditImage)
+
+        voyageNameInput.text = tripName ?: ""
+
+        btnChooseImage.setOnClickListener {
+            voyageImagePickerLauncher.launch("image/*")
+        }
+
+        btnSave.setOnClickListener {
+            stopTrip()
+            val nouveauNom = voyageNameInput.text.toString()
+
+            FirebaseFirestore.getInstance()
+                .collection("voyages")
+                .document(tripId!!)
+                .update(
+                    mapOf(
+                        "titre" to nouveauNom,
+                        "termine" to true
+                    )
+                )
+            marquerVoyageCommeTermine()
+
+            Toast.makeText(
+                this,
+                "Voyage terminé",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            dialog.dismiss()
+            goToHome()
+        }
+
+        dialog.show()
+    }
+
     // Boîte de dialogue de fin de trajet
     private fun showStopDialog() {
         val dialogView = layoutInflater.inflate(R.layout.stop_save_trip, null)
@@ -804,15 +874,8 @@ class Carte : AppCompatActivity() {
         val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
 
         btnFinish.setOnClickListener {
-            stopTrip()
-
-            marquerVoyageCommeTermine()
-
-            Toast.makeText(this, "Voyage terminé", Toast.LENGTH_SHORT).show()
-
             dialog.dismiss()
-
-            goToHome()
+            afficherDialogNotationVoyage()
         }
 
         btnDelete.setOnClickListener {
