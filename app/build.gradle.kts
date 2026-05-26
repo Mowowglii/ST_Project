@@ -54,6 +54,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("com.google.android.libraries.places:places:3.5.0") // pour des suggestions auto de lieu
+    implementation("androidx.exifinterface:exifinterface:1.3.7") // c'est pour lire les méta donnée d'une photo
     implementation("com.google.android.material:material:1.12.0") //material design
     implementation("com.makeramen:roundedimageview:2.3.0")//Image view
     implementation("androidx.navigation:navigation-fragment-ktx:2.9.7") // composant pour navigation

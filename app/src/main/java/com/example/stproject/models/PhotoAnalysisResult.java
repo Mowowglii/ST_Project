@@ -1,22 +1,19 @@
 package com.example.stproject.models;
-`
-// Cette classe contient les informations temporaires issues de l'analyse d'une photo.public class PhotoAnalysisResult {
-
-    public enum PhotoAnalysesStatus {
-        ACCEPTED,
-        OUTSIDE_TRIP,
-        MANUAL_VALIDATION_REQUIRED
-    }
+import com.example.stproject.models.PhotoAnalysisStatus;
+/**
+ * Cette classe contient les informations temporaires issues de l'analyse d'une photo.
+ */
+public class PhotoAnalysisResult {
 
     private Photo photo;
-    private PhotoAnalysesStatus status;
+    private PhotoAnalysisStatus status;
     private double distanceToTrip;
     private String message;
 
     public PhotoAnalysisResult() {}
 
     public PhotoAnalysisResult(Photo photo,
-                               PhotoAnalysesStatus status,
+                               PhotoAnalysisStatus status,
                                double distanceToTrip,
                                String message) {
         this.photo = photo;
@@ -33,11 +30,11 @@ package com.example.stproject.models;
         this.photo = photo;
     }
 
-    public PhotoAnalysesStatus getStatus() {
+    public PhotoAnalysisStatus getStatus() {
         return status;
     }
 
-    public void setStatus(PhotoAnalysesStatus status) {
+    public void setStatus(PhotoAnalysisStatus status) {
         this.status = status;
     }
 
