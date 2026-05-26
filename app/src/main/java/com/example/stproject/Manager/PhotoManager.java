@@ -131,4 +131,33 @@ public class PhotoManager {
                 }
         );
     }
+
+    public interface PhotoListCallback {
+        void onSuccess(List<Photo> photos);
+        void onError(String error);
+    }
+
+    public void getPhotosForCurrentTrip(PhotoListCallback callback) {
+
+        if (currentTripId == null || currentTripId.trim().isEmpty()) {
+            callback.onError("No trip selected");
+            return;
+        }
+
+        cfCommunicator.getPhotosForTrip(
+                currentTripId,
+                new CFCommunicator.PhotoListCallback() {
+
+                    @Override
+                    public void onSuccess(List<Photo> photos) {
+                        callback.onSuccess(photos);
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
+    }
 }

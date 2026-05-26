@@ -148,6 +148,7 @@ class Carte : AppCompatActivity() {
         setupGPS()
         setupMapClickForPoi()
         loadPOIsForTrip()
+        loadPhotosForTrip()
         loadTripPath()
         observeRealtimePath()
         initButtons()
@@ -960,4 +961,28 @@ class Carte : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+
+    private fun loadPhotosForTrip() {
+
+        val photoManager = PhotoManager(this)
+        photoManager.setCurrentTripId(tripId ?: "")
+
+        photoManager.getPhotosForCurrentTrip(
+            object : PhotoManager.PhotoListCallback {
+
+                override fun onSuccess(photos: List<Photo>) {
+                    acceptedPhotos.clear()
+                    acceptedPhotos.addAll(photos)
+                }
+
+                override fun onError(error: String) {
+                    Toast.makeText(
+                        this@Carte,
+                        error,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
+    }
 }
