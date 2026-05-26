@@ -4,8 +4,6 @@
 // La carte observe ce Flow et met à jour la Polyline sans accéder directement au service.
 package com.example.stproject.data;
 
-package com.example.stproject.data
-
 import android.location.Location
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

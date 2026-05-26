@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+import com.example.stproject.data.LocationRepository;
 /* import olivier a verifier  */
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,6 +78,10 @@ public class LocationRecovererService extends Service {
             }
             /* on ajoute le nouveau paquet de points  */
             List<Location> touslespoints = result.getLocations();
+            // Mathushan:
+            // Envoie les nouveaux points GPS dans le Flow.
+            // La carte pourra les recevoir en temps réel sans accéder directement au service.
+            LocationRepository.INSTANCE.addLocations(touslespoints);
             pointatraite.addAll(touslespoints);
             /* on recupere le nouveau dernier point  */
             dernierpoint=pointatraite.get(pointatraite.size()-1);

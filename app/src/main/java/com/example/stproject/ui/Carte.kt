@@ -28,6 +28,11 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.stproject.data.LocationRepository
+import kotlinx.coroutines.launch
 
 class Carte : AppCompatActivity() {
 
@@ -94,6 +99,7 @@ class Carte : AppCompatActivity() {
         setupGPS()
         chargerPOIDuVoyage()
         chargerTraceVoyage()
+        observerTraceTempsReel()
         initButtons()
         updateTripStatus()
     }
@@ -109,18 +115,7 @@ class Carte : AppCompatActivity() {
     private fun setupGPS() {
         locationOverlay = MyLocationNewOverlay(map)
         locationOverlay.enableMyLocation()
-
         map.overlays.add(locationOverlay)
-
-        // Centre la carte sur la première position GPS disponible
-        locationOverlay.runOnFirstFix {
-            runOnUiThread {
-                locationOverlay.myLocation?.let {
-                    map.controller.setZoom(18.0)
-                    map.controller.setCenter(it)
-                }
-            }
-        }
     }
 
     // Démarrage du voyage
@@ -176,6 +171,41 @@ class Carte : AppCompatActivity() {
                     }
                 }
             )
+        }
+    }
+
+    private fun observerTraceTempsReel() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                LocationRepository.currentPath.collect { locations ->
+
+                    if (locations.isEmpty()) return@collect
+
+                    val points = locations.map { location ->
+                        GeoPoint(location.latitude, location.longitude)
+                    }
+
+                    if (routeLine == null) {
+                        routeLine = Polyline().apply {
+                            styliserTrace(this)
+                        }
+
+                        map.overlays.add(routeLine)
+                    }
+
+                    routeLine?.setPoints(points)
+
+                    val lastLocation = locations.last()
+                    val lastPoint = GeoPoint(
+                        lastLocation.latitude,
+                        lastLocation.longitude
+                    )
+
+                    map.controller.animateTo(lastPoint)
+
+                    map.invalidate()
+                }
+            }
         }
     }
 
