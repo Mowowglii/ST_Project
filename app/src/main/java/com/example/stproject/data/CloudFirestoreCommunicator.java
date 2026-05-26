@@ -1,6 +1,5 @@
 package com.example.stproject.data;
 
-import android.location.Location;
 import android.util.Log;
 
 import com.example.stproject.models.POI;

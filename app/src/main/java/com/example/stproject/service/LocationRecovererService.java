@@ -202,7 +202,7 @@ public class LocationRecovererService extends Service {
             flpClient.removeLocationUpdates(callBack);
             isTracking = false;
             /* Préciser dans la notification que le suivi est en pause */
-            updateNotification("Tracking Paused");
+            updateNotification();
         }
     }
 
@@ -231,8 +231,8 @@ public class LocationRecovererService extends Service {
                 .build();
     }
 
-    private void updateNotification(String newText){
-        Notification notification = buildNotification(newText);
+    private void updateNotification(){
+        Notification notification = buildNotification("Tracking Paused");
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         manager.notify(NOTIFICATION_ID, notification);
     }

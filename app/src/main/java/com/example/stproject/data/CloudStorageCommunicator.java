@@ -5,7 +5,7 @@ import android.net.Uri;
 import android.util.Pair;
 
 
-
+import com.example.stproject.models.Voyage;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
@@ -21,12 +21,12 @@ import java.util.Queue;
 public class CloudStorageCommunicator {
     private final FirebaseStorage CSCInstance = FirebaseStorage.getInstance(); // Instance Firebase Storage
 
-    private final CloudFirestoreCommunicator cloudFirestoreCommunicator; // Instance du communicator Cloud Firestore
+    private final CFCommunicator cloudFirestoreCommunicator; // Instance du communicator Cloud Firestore
     private final StorageReference CSCRef = CSCInstance.getReference(); // Référence Firebase Storage
     private final Queue<Pair<StorageReference, Uri>> uploadQueue; // File des envois à la base de donnée
 
     // Constructeur de la classe
-    public CloudStorageCommunicator(CloudFirestoreCommunicator cfc){
+    public CloudStorageCommunicator(CFCommunicator cfc){
         this.cloudFirestoreCommunicator = cfc;
         uploadQueue = new LinkedList<>(); // Initialisation de la file des envois
     }
@@ -34,15 +34,13 @@ public class CloudStorageCommunicator {
     private StorageReference fromStringToRef(String path){
         return CSCRef.child(path);
     }
-    public void addTripImage(String imagePath, String tripName){
-        // Créer l'Uri du fichier
-        Uri uri = Uri.fromFile( new File(imagePath) );
+    public void addTripImage(Uri imageUri, Voyage trip){
 
         // Déterminer le chemin de stockage
-        StorageReference uploadRef = CSCRef.child(tripName+"/"+uri.getLastPathSegment());
+        StorageReference uploadRef = CSCRef.child(trip.getTitre()+"/"+imageUri.getLastPathSegment());
 
         // Créer la pair StorageReference et Uri
-        Pair<StorageReference, Uri> pair = new Pair<>(uploadRef, uri);
+        Pair<StorageReference, Uri> pair = new Pair<>(uploadRef, imageUri);
 
         // Ajouter à la file d'attente
         this.uploadQueue.add(pair);
@@ -62,7 +60,7 @@ public class CloudStorageCommunicator {
                 // Récupérer le voyage concerné et l'ajouter à la Firestore Database
                 try {
                     // Envoyer la référence de l'image dans Firestore Database
-                    cloudFirestoreCommunicator.ajouter_photo(fileRef.getPath());
+                    cloudFirestoreCommunicator.sendPictureToDb(fileRef.getPath(), "Il faut insérer le nom du voyage ici");
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -129,4 +127,6 @@ public class CloudStorageCommunicator {
         StorageReference imageReference = fromStringToRef(imageRef);
         return imageReference.delete();
     }
+
+    public StorageReference getCSCRef(){return this.CSCRef;}
 }
