@@ -35,6 +35,7 @@ import com.example.stproject.data.LocationRepository
 import kotlinx.coroutines.launch
 import android.location.Location
 import com.example.stproject.utils.ReductionListPoint
+import com.google.firebase.firestore.FirebaseFirestore
 
 class Carte : AppCompatActivity() {
 
@@ -111,6 +112,15 @@ class Carte : AppCompatActivity() {
         val intent = Intent(this, LocationRecovererService::class.java)
         intent.action = action
         startService(intent)
+    }
+
+    private fun marquerVoyageCommeTermine() {
+        tripId?.let { voyageId ->
+            FirebaseFirestore.getInstance()
+                .collection("voyages")
+                .document(voyageId)
+                .update("termine", true)
+        }
     }
 
     // Initialisation de la localisation GPS utilisateur
@@ -650,8 +660,13 @@ class Carte : AppCompatActivity() {
 
         btnFinish.setOnClickListener {
             stopTrip()
+
+            marquerVoyageCommeTermine()
+
             Toast.makeText(this, "Voyage terminé", Toast.LENGTH_SHORT).show()
+
             dialog.dismiss()
+
             goToHome()
         }
 
