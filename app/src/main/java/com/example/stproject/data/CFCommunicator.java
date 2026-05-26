@@ -15,8 +15,10 @@ import com.google.firebase.storage.StorageReference;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class CFCommunicator {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -30,14 +32,24 @@ public class CFCommunicator {
                 .getId();
     }
 
-    public String getKeyFromTripTitle(Voyage trip){
-        // Faire une query pour trouver le voyage qui contient ce nom
-        List<DocumentSnapshot> result = db.collection("voyages")
+    public interface TripKeytitleCallback {
+        void onSuccess(String tripId);
+        void onFailure(String error);
+    }
+
+    public void getKeyFromTripTitle(Voyage trip, TripKeytitleCallback callback) {
+        db.collection("voyages")
                 .whereEqualTo("titre", trip.getTitre())
                 .get()
-                .getResult()
-                .getDocuments();
-        return result.get(0).getId();
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        String docId = queryDocumentSnapshots.getDocuments().get(0).getId();
+                        callback.onSuccess(docId);
+                    } else {
+                        callback.onFailure("Aucun voyage trouvé avec le titre : " + trip.getTitre());
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
     }
 
     public interface TripTitleCallback {
@@ -128,98 +140,69 @@ public class CFCommunicator {
     }
 
     public void deleteTrip(Voyage trip){
-        // Définir l'id à supprimer
-        String delId = getKeyFromTripTitle(trip);
+        getKeyFromTripTitle(trip, new TripKeytitleCallback () {
+            @Override
+            public void onSuccess(String delId) {
+                delAllPoi(delId);
+                delPath(delId);
+                delAllPictures(trip.getTitre());
 
-        // Supprimer les POIs des voyages
-        delAllPoi(delId);
+                db.collection("voyages")
+                        .document(delId)
+                        .delete()
+                        .addOnSuccessListener(aVoid ->
+                                Log.d("Firestore", "Voyage supprimé avec succès"))
+                        .addOnFailureListener(e ->
+                                Log.e("Firestore", "Erreur suppression voyage : " + e.getMessage()));
+            }
 
-        // Supprimer les coordonnées de voyages
-        delPath(delId);
-
-        // Supprimer Photos
-        delAllPictures(trip.getTitre());
-
-        // suppression du voyage
-        db.collection("voyages")
-                .document(delId)
-                .delete()
-                .addOnSuccessListener(aVoid ->
-                        Log.d("Firestore", "Voyage supprimé avec succès"))
-                .addOnFailureListener(e ->
-                        Log.e("Firestore", "Erreur suppression voyage : " + e.getMessage()));
+            @Override
+            public void onFailure(String error) {
+                Log.e("Firestore", "Impossible de supprimer le voyage : " + error);
+            }
+        });
     }
 
     // POI
 
-    public void addPOIToTrip(POI poi, Voyage trip){
-        db.collection("voyages")
-                .document(getKeyFromTripTitle(trip))
+    public String getPOIKeyFromTrip(Voyage trip){
+        return db.collection("voyages")
+                .document(trip.getId())
                 .collection("pois")
-                .document()
+                .getId();
+    }
+
+    public void addPOIToTrip(POI poi, Voyage trip){
+        // Ajouter l'emplacement du POI
+        poi.setIdPoi(getPOIKeyFromTrip(trip));
+
+        db.collection("voyages")
+                .document(trip.getId())
+                .collection("pois")
+                .document(poi.getIdPoi())
                 .set(poi)
                 .addOnSuccessListener(aVoid->{
-                    Log.d("FireStore", "POI ajouté au voyage dans la base de donnée");
+                    Log.d("FireStore", "Success of adding POI to trip in DB");
                 })
-                .addOnFailureListener(e->{
-                    Log.e("FireStore", "erreur ajout :" + e.getMessage());
+                .addOnFailureListener(e ->{
+                    Log.e("FireStore", "Error during adding POI to trip in DB : "+ e.getMessage());
                 });
     }
 
-    public void modifyPOIatTrip(POI poi, Voyage trip){
-        // WARNING: getKeyFromTripTitle(trip) uses .getResult() which blocks the UI thread.
-        // It is better to use an asynchronous chain like this:
+    public void modifyPOIatTrip(POI poi, Voyage trip) {
+        // Find the trip we are modifying the POI
         db.collection("voyages")
-                .whereEqualTo("titre", trip.getTitre())
-                .get()
-                .addOnSuccessListener(tripQuery -> {
-                    if (!tripQuery.isEmpty()) {
-                        String tripId = tripQuery.getDocuments().get(0).getId();
-
-                        // Now find the specific POI in that trip
-                        db.collection("voyages")
-                                .document(tripId)
-                                .collection("pois")
-                                .whereEqualTo("longitude", poi.getLongitude())
-                                .whereEqualTo("latitude", poi.getLatitude())
-                                .get()
-                                .addOnSuccessListener(poiQuery -> {
-                                    if (!poiQuery.isEmpty()) {
-                                        // GET THE DOCUMENT REFERENCE AND UPDATE
-                                        DocumentSnapshot document = poiQuery.getDocuments().get(0);
-                                        document.getReference().set(poi)
-                                                .addOnSuccessListener(aVoid -> Log.d("FireStore", "POI modifié avec succès"))
-                                                .addOnFailureListener(e -> Log.e("FireStore", "Erreur modification POI : " + e.getMessage()));
-                                    } else {
-                                        Log.e("FireStore", "POI introuvable avec ces coordonnées");
-                                    }
-                                });
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("FireStore", "Erreur recherche voyage : " + e.getMessage()));
-    }
-
-    public void delPOIfromTrip(POI poi, Voyage trip){
-        db.collection("voyages")
-                .document(getKeyFromTripTitle(trip))
+                .document(trip.getId())
                 .collection("pois")
-                .whereEqualTo("latitude", poi.getLatitude())
-                .whereEqualTo("longitude", poi.getLongitude())
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        queryDocumentSnapshots.getDocuments()
-                                .get(0)
-                                .getReference()
-                                .delete()
-                                .addOnSuccessListener(aVoid ->
-                                        Log.d("Firestore", "POI supprimé avec succès"))
-                                .addOnFailureListener(e ->
-                                        Log.e("Firestore", "Erreur suppression POI", e));
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Log.e("Firestore", "Erreur recherche POI", e));
+                .document(poi.getIdPoi())
+                .set(poi);
+    }
+    public void delPOIfromTrip(POI poi, Voyage trip) {
+        db.collection("voyages")
+                .document(trip.getId())
+                .collection("pois")
+                .document(poi.getIdPoi())
+                .delete();
     }
 
     private void delAllPoi(String tripId){
@@ -250,7 +233,7 @@ public class CFCommunicator {
     public void getPOIsForTrip(Voyage trip, POIsCallback callback) {
 
         db.collection("voyages")
-                .document(getKeyFromTripTitle(trip))
+                .document(trip.getId())
                 .collection("pois")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {

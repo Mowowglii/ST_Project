@@ -8,7 +8,7 @@ public class POI {
     private double latitude;
     private double longitude;
     private String type;
-    private String idVoyage; 
+    private String idPOI;
 
     public POI() {}
 
@@ -69,11 +69,11 @@ public class POI {
         this.longitude = longitude;
     }
 
-    public String getIdVoyage() { 
-        return idVoyage; 
+    public String getIdPoi() {
+        return idPOI;
     }
 
-    public void setIdVoyage(String idVoyage) { 
-        this.idVoyage = idVoyage; 
+    public void setIdPoi(String id) {
+        this.idPOI = id;
     }
 }
