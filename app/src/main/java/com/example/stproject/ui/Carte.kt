@@ -40,6 +40,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.views.overlay.MapEventsOverlay
 import com.example.stproject.Manager.PhotoManager
+import com.example.stproject.models.Photo
 
 class Carte : AppCompatActivity() {
 
@@ -728,6 +729,9 @@ class Carte : AppCompatActivity() {
         dialog.show()
     }
 
+    private val acceptedPhotos = mutableListOf<Photo>()
+    private val manualValidationPhotos = mutableListOf<Photo>()
+    private val outsideTripPhotos = mutableListOf<Photo>()
     private val photoPickerLauncher =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
 
@@ -743,11 +747,23 @@ class Carte : AppCompatActivity() {
                 LocationRepository.currentPath.value
             )
 
+            acceptedPhotos.addAll(
+                result.getAcceptedPhotos().map { it.photo }
+            )
+
+            manualValidationPhotos.addAll(
+                result.getManualValidationPhotos().map { it.photo }
+            )
+
+            outsideTripPhotos.addAll(
+                result.getOutsideTripPhotos().map { it.photo }
+            )
+
             Toast.makeText(
                 this,
-                "Acceptées : ${result.acceptedPhotos.size} | " +
-                        "Hors trajet : ${result.outsideTripPhotos.size} | " +
-                        "À valider : ${result.manualValidationPhotos.size}",
+                "Acceptées : ${acceptedPhotos.size} | " +
+                        "Hors trajet : ${outsideTripPhotos.size} | " +
+                        "À valider : ${manualValidationPhotos.size}",
                 Toast.LENGTH_LONG
             ).show()
         }
