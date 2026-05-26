@@ -58,7 +58,7 @@
                     android:layout_height="32dp"
                     android:layout_marginEnd="10dp"
                     android:padding="6dp"
-                    android:src="@drawable/ic_check"
+                    android:src="@drawable/ic_modif"
                     android:tint="@android:color/white"
                     android:contentDescription="Sélectionner" />
 
