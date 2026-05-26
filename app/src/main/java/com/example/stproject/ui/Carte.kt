@@ -1,21 +1,24 @@
 package com.example.stproject.ui
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.stproject.Manager.POIManager
 import com.example.stproject.R
+import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.POI
 import com.example.stproject.service.LocationRecovererService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -23,26 +26,40 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 class Carte : AppCompatActivity() {
 
+    // Carte OpenStreetMap
     private lateinit var map: MapView
+
+    // Overlay utilisé pour récupérer et afficher la position GPS
     private lateinit var locationOverlay: MyLocationNewOverlay
 
+    // États possibles du voyage
     private enum class TripState { IDLE, RUNNING, PAUSED }
+
+    // État actuel du voyage
     private var tripState = TripState.IDLE
 
+    // Liste des POI ajoutés ou récupérés pour le voyage actuel
     private val poiList = mutableListOf<POI>()
 
+    // Identifiants du voyage transmis depuis MainActivity ou Consultation
     private var tripId: String? = null
     private var tripName: String? = null
 
+    // Ligne utilisée pour afficher le tracé du voyage
+    private var routeLine: Polyline? = null
+
+    // Manager utilisé pour gérer les POI côté backend
     private lateinit var poiManager: POIManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Chargement de la configuration osmdroid
         Configuration.getInstance().load(
             applicationContext,
             getSharedPreferences("osmdroid", MODE_PRIVATE)
@@ -50,42 +67,52 @@ class Carte : AppCompatActivity() {
 
         setContentView(R.layout.activity_carte)
 
+        // Récupération des informations du voyage
         tripId = intent.getStringExtra("tripId")
         tripName = intent.getStringExtra("trip_name")
 
+        // Initialisation du manager POI
         poiManager = POIManager()
 
+        // Définit le voyage actif pour les ajouts, modifications et suppressions de POI
         tripId?.let {
-            poiManager.definirVoyageActif(tripId)
+            poiManager.definirVoyageActif(it)
         }
 
+        // Initialisation de la carte
         map = findViewById(R.id.map)
         map.setMultiTouchControls(true)
 
+        // Désactive la répétition infinie de la carte
         map.isHorizontalMapRepetitionEnabled = false
         map.isVerticalMapRepetitionEnabled = false
 
+        // Limites de zoom
         map.minZoomLevel = 3.0
         map.maxZoomLevel = 20.0
 
         setupGPS()
         chargerPOIDuVoyage()
+        chargerTraceVoyage()
         initButtons()
         updateTripStatus()
     }
 
+    // Envoie une action au service de localisation
     private fun sendLocationServiceAction(action: String) {
         val intent = Intent(this, LocationRecovererService::class.java)
         intent.action = action
         startService(intent)
     }
 
+    // Initialisation de la localisation GPS utilisateur
     private fun setupGPS() {
         locationOverlay = MyLocationNewOverlay(map)
         locationOverlay.enableMyLocation()
 
         map.overlays.add(locationOverlay)
 
+        // Centre la carte sur la première position GPS disponible
         locationOverlay.runOnFirstFix {
             runOnUiThread {
                 locationOverlay.myLocation?.let {
@@ -96,30 +123,84 @@ class Carte : AppCompatActivity() {
         }
     }
 
+    // Démarrage du voyage
     private fun startTrip() {
         tripState = TripState.RUNNING
         Toast.makeText(this, "Voyage démarré", Toast.LENGTH_SHORT).show()
         updateTripStatus()
     }
 
+    // Charge le tracé déjà enregistré du voyage depuis Firestore
+    private fun chargerTraceVoyage() {
+        tripId?.let { voyageId ->
+
+            val communicator = CloudFirestoreCommunicator()
+
+            communicator.recuperer_path_voyage(
+                voyageId,
+                object : CloudFirestoreCommunicator.PathCallback {
+
+                    override fun onComplete(path: List<Map<String, Any>>) {
+                        val points = mutableListOf<GeoPoint>()
+
+                        for (point in path) {
+                            val lat = point["latitude"] as? Double
+                            val lon = point["longitude"] as? Double
+
+                            if (lat != null && lon != null) {
+                                points.add(GeoPoint(lat, lon))
+                            }
+                        }
+
+                        if (points.isNotEmpty()) {
+                            routeLine?.let {
+                                map.overlays.remove(it)
+                            }
+
+                            routeLine = Polyline().apply {
+                                setPoints(points)
+                                styliserTrace(this)
+                            }
+
+                            map.overlays.add(routeLine)
+                            map.invalidate()
+                        }
+                    }
+
+                    override fun onError(error: String) {
+                        Toast.makeText(
+                            this@Carte,
+                            error,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
+    }
+
+    // Mise en pause du voyage
     private fun pauseTrip() {
         tripState = TripState.PAUSED
         Toast.makeText(this, "Voyage en pause", Toast.LENGTH_SHORT).show()
         updateTripStatus()
     }
 
+    // Reprise du voyage après une pause
     private fun resumeTrip() {
         tripState = TripState.RUNNING
         Toast.makeText(this, "Voyage repris", Toast.LENGTH_SHORT).show()
         updateTripStatus()
     }
 
+    // Arrêt du voyage
     private fun stopTrip() {
         tripState = TripState.IDLE
         stopService(Intent(this, LocationRecovererService::class.java))
         updateTripStatus()
     }
 
+    // Retour vers la page d'accueil
     private fun goToHome() {
         val intent = Intent(this, MainActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
@@ -127,6 +208,7 @@ class Carte : AppCompatActivity() {
         finish()
     }
 
+    // Met à jour le texte et la couleur du bouton selon l'état du voyage
     private fun updateTripStatus() {
         val statusText = findViewById<TextView>(R.id.tripStatusText)
         val btnStart = findViewById<ImageButton>(R.id.btnStart)
@@ -134,21 +216,31 @@ class Carte : AppCompatActivity() {
         when (tripState) {
             TripState.IDLE -> {
                 statusText.text = "Prêt"
-                btnStart.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                btnStart.setBackgroundColor(Color.TRANSPARENT)
             }
 
             TripState.RUNNING -> {
                 statusText.text = "● Enregistrement en cours"
-                btnStart.setBackgroundColor(android.graphics.Color.parseColor("#C8E6C9"))
+                btnStart.setBackgroundColor(Color.parseColor("#C8E6C9"))
             }
 
             TripState.PAUSED -> {
                 statusText.text = "Pause"
-                btnStart.setBackgroundColor(android.graphics.Color.parseColor("#FFE0B2"))
+                btnStart.setBackgroundColor(Color.parseColor("#FFE0B2"))
             }
         }
     }
 
+    // Applique le style visuel du tracé du voyage
+    private fun styliserTrace(trace: Polyline) {
+        trace.outlinePaint.strokeWidth = 24f
+        trace.outlinePaint.color = Color.parseColor("#4CAF50")
+        trace.outlinePaint.strokeCap = Paint.Cap.ROUND
+        trace.outlinePaint.strokeJoin = Paint.Join.ROUND
+        trace.outlinePaint.isAntiAlias = true
+    }
+
+    // Affiche un marqueur POI sur la carte
     private fun afficherMarkerPOI(poi: POI) {
         val marker = Marker(map)
 
@@ -160,12 +252,29 @@ class Carte : AppCompatActivity() {
         marker.title = poi.titre
         marker.relatedObject = poi
 
+        marker.icon = ContextCompat.getDrawable(
+            this,
+            R.drawable.ic_poi_marker
+        )
+
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+
         configurerClickMarker(marker)
 
         map.overlays.add(marker)
         map.invalidate()
     }
 
+    // Recharge la liste des POI affichée dans le menu latéral
+    private fun refreshPoiMenu() {
+        val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
+
+        menuRecyclerView.adapter = PoiAdapter(poiList) { poi ->
+            Toast.makeText(this, poi.titre, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Ouvre le formulaire de création d'un POI
     private fun addPOIWithEditDialog() {
         locationOverlay.myLocation?.let { loc ->
 
@@ -180,6 +289,10 @@ class Carte : AppCompatActivity() {
 
             PoiEditDialog(poi) { updatedPoi ->
 
+                tripId?.let {
+                    poiManager.definirVoyageActif(it)
+                }
+
                 poiManager.ajouterPOI(
                     updatedPoi.titre,
                     updatedPoi.description,
@@ -192,6 +305,7 @@ class Carte : AppCompatActivity() {
                         override fun onSuccess(poi: POI) {
                             poiList.add(poi)
                             afficherMarkerPOI(poi)
+                            refreshPoiMenu()
 
                             Toast.makeText(
                                 this@Carte,
@@ -218,6 +332,7 @@ class Carte : AppCompatActivity() {
         ).show()
     }
 
+    // Configure le clic sur un marqueur POI
     private fun configurerClickMarker(marker: Marker) {
         marker.setOnMarkerClickListener { clickedMarker, _ ->
             val poiClique = clickedMarker.relatedObject as? POI
@@ -230,6 +345,7 @@ class Carte : AppCompatActivity() {
         }
     }
 
+    // Ouvre le formulaire de modification d'un POI
     private fun showModifierPOIDialog(poi: POI, marker: Marker) {
         PoiEditDialog(poi) { updatedPoi ->
 
@@ -246,6 +362,7 @@ class Carte : AppCompatActivity() {
                         marker.relatedObject = poiModifie
 
                         map.invalidate()
+                        refreshPoiMenu()
 
                         Toast.makeText(
                             this@Carte,
@@ -266,6 +383,7 @@ class Carte : AppCompatActivity() {
         }.show(supportFragmentManager, "PoiEditDialog")
     }
 
+    // Supprime un POI du backend et de la carte
     private fun supprimerPOI(poi: POI, marker: Marker) {
         poiManager.supprimerPOI(
             poi,
@@ -275,6 +393,7 @@ class Carte : AppCompatActivity() {
                     poiList.remove(poi)
                     map.overlays.remove(marker)
                     map.invalidate()
+                    refreshPoiMenu()
 
                     Toast.makeText(
                         this@Carte,
@@ -294,6 +413,7 @@ class Carte : AppCompatActivity() {
         )
     }
 
+    // Affiche les détails d'un POI sélectionné
     private fun showDetailsPOIDialog(poi: POI, marker: Marker) {
         AlertDialog.Builder(this)
             .setTitle(poi.titre)
@@ -312,6 +432,7 @@ class Carte : AppCompatActivity() {
             .show()
     }
 
+    // Charge les POI du voyage actuel depuis Firestore
     private fun chargerPOIDuVoyage() {
         tripId?.let { voyageId ->
 
@@ -326,6 +447,8 @@ class Carte : AppCompatActivity() {
                         for (poi in pois) {
                             afficherMarkerPOI(poi)
                         }
+
+                        refreshPoiMenu()
                     }
 
                     override fun onError(message: String) {
@@ -340,6 +463,7 @@ class Carte : AppCompatActivity() {
         }
     }
 
+    // Initialisation des boutons de l'interface
     private fun initButtons() {
         val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
         val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
@@ -348,18 +472,30 @@ class Carte : AppCompatActivity() {
 
         menuRecyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Ouvre le menu latéral
         findViewById<ImageView>(R.id.imageMenu).setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
+        // Recentrage sur la position actuelle
+        findViewById<ImageButton>(R.id.btnCenterLocation).setOnClickListener {
+            locationOverlay.myLocation?.let {
+                map.controller.animateTo(it)
+                map.controller.setZoom(18.0)
+            } ?: Toast.makeText(
+                this,
+                "Position indisponible",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // Onglet POI du menu latéral
         findViewById<TextView>(R.id.tabPoi).setOnClickListener {
             menuTitle.text = "Mes POI"
             menuAddButton.text = "+ Ajouter un POI"
 
-            menuRecyclerView.adapter = SuggestionsAdapter(
-                poiList.map { it.titre }
-            ) { selectedPoi ->
-                Toast.makeText(this, selectedPoi, Toast.LENGTH_SHORT).show()
+            menuRecyclerView.adapter = PoiAdapter(poiList) { poi ->
+                Toast.makeText(this, poi.titre, Toast.LENGTH_SHORT).show()
             }
 
             menuAddButton.setOnClickListener {
@@ -367,6 +503,7 @@ class Carte : AppCompatActivity() {
             }
         }
 
+        // Onglet Photos du menu latéral
         findViewById<TextView>(R.id.tabPhotos).setOnClickListener {
             menuTitle.text = "Mes Photos"
             menuAddButton.text = "+ Ajouter une photo"
@@ -382,14 +519,17 @@ class Carte : AppCompatActivity() {
             }
         }
 
+        // Bouton par défaut du menu latéral
         menuAddButton.setOnClickListener {
             addPOIWithEditDialog()
         }
 
+        // Bouton d'ajout flottant
         findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener {
             showAddDialog()
         }
 
+        // Bouton Start
         findViewById<ImageButton>(R.id.btnStart).setOnClickListener {
             sendLocationServiceAction("ACTION_START")
 
@@ -400,17 +540,20 @@ class Carte : AppCompatActivity() {
             }
         }
 
+        // Bouton Pause
         findViewById<ImageButton>(R.id.btnPause).setOnClickListener {
             sendLocationServiceAction("ACTION_PAUSE")
             pauseTrip()
         }
 
+        // Bouton Stop
         findViewById<ImageButton>(R.id.btnStop).setOnClickListener {
             stopTrip()
             showStopDialog()
         }
     }
 
+    // Boîte de dialogue pour ajouter un POI ou une photo
     private fun showAddDialog() {
         val options = arrayOf("Ajouter POI", "Ajouter Photo")
 
@@ -431,6 +574,7 @@ class Carte : AppCompatActivity() {
             .show()
     }
 
+    // Demande confirmation pour reprendre le voyage
     private fun showResumeDialog() {
         AlertDialog.Builder(this)
             .setTitle("Reprendre le voyage")
@@ -440,6 +584,7 @@ class Carte : AppCompatActivity() {
             .show()
     }
 
+    // Boîte de dialogue de fin de trajet
     private fun showStopDialog() {
         val dialogView = layoutInflater.inflate(R.layout.stop_save_trip, null)
 
@@ -460,6 +605,7 @@ class Carte : AppCompatActivity() {
 
         btnDelete.setOnClickListener {
             stopTrip()
+
             map.overlays.clear()
             map.overlays.add(locationOverlay)
             map.invalidate()

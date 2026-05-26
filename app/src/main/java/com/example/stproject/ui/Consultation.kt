@@ -16,6 +16,7 @@ import com.example.stproject.R
 import com.example.stproject.models.Voyage
 import com.example.stproject.Manager.VoyageManager
 
+
 class Consultation : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView

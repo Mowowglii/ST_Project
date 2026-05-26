@@ -15,6 +15,7 @@ import com.example.stproject.R
 import com.example.stproject.models.POI
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
+// Fenêtre permettant de créer ou modifier un POI
 class PoiEditDialog(
     private val poi: POI,
     private val onSave: (POI) -> Unit
@@ -26,8 +27,10 @@ class PoiEditDialog(
         savedInstanceState: Bundle?
     ): View {
 
+        // Charge le layout du formulaire POI
         val view = inflater.inflate(R.layout.edit_poi, container, false)
 
+        // Récupération des éléments de l'interface
         val nameInput = view.findViewById<EditText>(R.id.poiName)
         val reviewInput = view.findViewById<EditText>(R.id.poiReview)
         val ratingBar = view.findViewById<RatingBar>(R.id.poiRating)
@@ -35,6 +38,7 @@ class PoiEditDialog(
         val imagephoto = view.findViewById<ImageView>(R.id.imagephoto)
         val spinner = view.findViewById<Spinner>(R.id.spinnerTypeLieu)
 
+        // Liste des catégories disponibles pour un POI
         val types = listOf(
             "Choisir une catégorie",
             "Monument",
@@ -44,6 +48,7 @@ class PoiEditDialog(
             "autre"
         )
 
+        // Adaptateur utilisé pour remplir le spinner des catégories
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
@@ -54,10 +59,12 @@ class PoiEditDialog(
 
         spinner.adapter = adapter
 
+        // Pré-remplit le formulaire si le POI existe déjà
         nameInput.setText(poi.titre)
         reviewInput.setText(poi.description)
         ratingBar.rating = poi.note.toFloat()
 
+        // Sélectionne automatiquement la catégorie actuelle du POI
         val typeIndex = types.indexOf(poi.type)
 
         if (typeIndex >= 0) {
@@ -66,6 +73,7 @@ class PoiEditDialog(
             spinner.setSelection(0)
         }
 
+        // Sauvegarde les informations saisies
         saveBtn.setOnClickListener {
             val choix = spinner.selectedItem.toString()
 

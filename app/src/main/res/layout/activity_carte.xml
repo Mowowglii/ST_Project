@@ -175,4 +175,16 @@
 
     </com.google.android.material.navigation.NavigationView>
 
+    <ImageButton
+        android:id="@+id/btnCenterLocation"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="190dp"
+        android:background="@android:color/holo_green_dark"
+        android:padding="12dp"
+        android:src="@drawable/ic_gps"
+        android:tint="@android:color/white" />
+
 </androidx.drawerlayout.widget.DrawerLayout>
