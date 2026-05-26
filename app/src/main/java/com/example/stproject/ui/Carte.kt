@@ -16,7 +16,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.stproject.Manager.POIManager
+import com.example.stproject.Manager.POIManager2
 import com.example.stproject.R
 import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.POI
@@ -70,7 +70,7 @@ class Carte : AppCompatActivity() {
     private var routeLine: Polyline? = null
 
     // Manager utilisé pour gérer les POI côté backend
-    private lateinit var poiManager: POIManager
+    private lateinit var poiManager: POIManager2
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,7 +88,7 @@ class Carte : AppCompatActivity() {
         tripName = intent.getStringExtra("trip_name")
 
         // Initialisation du manager POI
-        poiManager = POIManager()
+        poiManager = POIManager2()
 
         // Définit le voyage actif pour les ajouts, modifications et suppressions de POI
         tripId?.let {
@@ -429,7 +429,7 @@ class Carte : AppCompatActivity() {
                 updatedPoi.latitude,
                 updatedPoi.longitude,
                 updatedPoi.type,
-                object : POIManager.AjoutPOICallback {
+                object : POIManager2.AjoutPOICallback {
 
                     override fun onSuccess(poi: POI) {
                         poiList.add(poi)
@@ -478,7 +478,7 @@ class Carte : AppCompatActivity() {
                 updatedPoi.description,
                 updatedPoi.type,
                 updatedPoi.note,
-                object : POIManager.AjoutPOICallback {
+                object : POIManager2.AjoutPOICallback {
 
                     override fun onSuccess(poiModifie: POI) {
                         marker.title = poiModifie.titre
@@ -510,7 +510,7 @@ class Carte : AppCompatActivity() {
     private fun supprimerPOI(poi: POI, marker: Marker) {
         poiManager.supprimerPOI(
             poi,
-            object : POIManager.AjoutPOICallback {
+            object : POIManager2.AjoutPOICallback {
 
                 override fun onSuccess(poi: POI) {
                     poiList.remove(poi)
@@ -561,7 +561,7 @@ class Carte : AppCompatActivity() {
 
             poiManager.recupererPOIDuVoyage(
                 voyageId,
-                object : POIManager.ListePOICallback {
+                object : POIManager2.ListePOICallback {
 
                     override fun onSuccess(pois: List<POI>) {
                         poiList.clear()

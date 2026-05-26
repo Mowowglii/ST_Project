@@ -74,7 +74,7 @@ public class CFCommunicator {
 
                 });
     }
-
+    // récupère une liste de voyage.
     public interface TripsCallback {
         void onSuccess(List<Voyage> voyages);
         void onFailure(String error);
@@ -241,6 +241,34 @@ public class CFCommunicator {
                             .addOnFailureListener(e -> Log.e("Firestore", "Error committing batch delete", e));
                 })
                 .addOnFailureListener(e -> Log.e("Firestore", "Error fetching POIs for deletion", e));
+    }
+    public interface POIsCallback {
+        void onSuccess(List<POI> pois);
+        void onFailure(String error);
+    }
+
+    public void getPOIsForTrip(Voyage trip, POIsCallback callback) {
+
+        db.collection("voyages")
+                .document(getKeyFromTripTitle(trip))
+                .collection("pois")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                    List<POI> pois = new ArrayList<>();
+
+                    for (DocumentSnapshot document : queryDocumentSnapshots.getDocuments()) {
+                        POI poi = document.toObject(POI.class);
+
+                        if (poi != null) {
+                            pois.add(poi);
+                        }
+                    }
+
+                    callback.onSuccess(pois);
+                })
+                .addOnFailureListener(e ->
+                        callback.onFailure(e.getMessage()));
     }
 
     // Images

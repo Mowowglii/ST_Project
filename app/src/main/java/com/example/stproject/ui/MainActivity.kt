@@ -12,7 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.example.stproject.Manager.VoyageManager
+import com.example.stproject.Manager.TripManager
 import com.example.stproject.R
 import com.example.stproject.models.Voyage
 
@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Initialise le manager utilisé pour créer les voyages
-        val voyageManager = VoyageManager()
+        val tripManager = TripManager()
 
         // Ajuste automatiquement le padding pour éviter les barres système
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -82,16 +82,15 @@ class MainActivity : AppCompatActivity() {
             val tripName = editTripName.text.toString()
 
             // Création du voyage dans le backend avant ouverture de la carte
-            voyageManager.creerNouveauVoyage(
+            tripManager.createNewTrip(
                 tripName,
-                object : VoyageManager.CreationVoyageCallback {
+                object : TripManager.TripCreationCallback {
 
-                    override fun onSuccess(voyageId: String, voyage: Voyage) {
+                    override fun onSuccess(tripId: String, trip: Voyage) {
                         val intent = Intent(this@MainActivity, Carte::class.java)
 
-                        // Envoie le nom et l'id du voyage à la carte
-                        intent.putExtra("trip_name", voyage.titre)
-                        intent.putExtra("tripId", voyageId)
+                        intent.putExtra("trip_name", trip.titre)
+                        intent.putExtra("tripId", tripId)
 
                         startActivity(intent)
                     }
@@ -105,6 +104,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             )
+
         }
     }
 }

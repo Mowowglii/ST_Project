@@ -15,7 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.stproject.Manager.VoyageManager
+import com.example.stproject.Manager.TripManager
 import com.example.stproject.R
 import com.example.stproject.models.Voyage
 
@@ -27,7 +27,7 @@ class Consultation : AppCompatActivity() {
     private lateinit var tabTermines: TextView
 
     // Manager utilisé pour récupérer et supprimer les voyages
-    private val voyageManager = VoyageManager()
+    private val tripManager = TripManager()
 
     // Liste complète des voyages récupérés
     private val voyages = mutableListOf<Voyage>()
@@ -70,8 +70,8 @@ class Consultation : AppCompatActivity() {
     }
 
     private fun chargerVoyages() {
-        voyageManager.recupererTousLesVoyages(
-            object : VoyageManager.ListeVoyagesCallback {
+        tripManager.recupererTousLesVoyages(
+            object : TripManager.ListeVoyagesCallback {
 
                 override fun onSuccess(voyagesRecuperes: List<Voyage>) {
                     voyages.clear()
@@ -161,9 +161,9 @@ class Consultation : AppCompatActivity() {
                             .setMessage("Voulez-vous vraiment supprimer ce voyage ?")
                             .setPositiveButton("Supprimer") { _, _ ->
 
-                                voyageManager.supprimerVoyage(
+                                tripManager.supprimerVoyage(
                                     voyage,
-                                    object : VoyageManager.SuppressionVoyageCallback {
+                                    object : TripManager.SuppressionVoyageCallback {
 
                                         override fun onSuccess() {
                                             // Retire le voyage de la liste complète et de la liste affichée
