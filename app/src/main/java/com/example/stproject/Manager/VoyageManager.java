@@ -56,6 +56,7 @@ public class VoyageManager {
                                 titre,
                                 "",
                                 0,
+                                false,
                                 new ArrayList<>(),
                                 new ArrayList<>(),
                                 new ArrayList<>()

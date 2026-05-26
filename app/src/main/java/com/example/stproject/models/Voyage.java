@@ -1,10 +1,7 @@
 package com.example.stproject.models;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import android.location.Location;
 
 public class Voyage {
 
@@ -12,24 +9,37 @@ public class Voyage {
     private String titre;
     private String description;
     private Integer note;
+
+    // Indique si le voyage est terminé ou encore en cours
+    private boolean termine = false;
+
     private List<POI> listePois;
     private List<String> listePhotos;
     private List<Map<String, Object>> path;
 
     public Voyage() {}
 
-    public Voyage(String id, String titre, String description, Integer note,
-                   List<POI> listePois, List<String> listePhotos, List<Map<String, Object>> path) {
+    public Voyage(
+            String id,
+            String titre,
+            String description,
+            Integer note,
+            boolean termine,
+            List<POI> listePois,
+            List<String> listePhotos,
+            List<Map<String, Object>> path
+    ) {
+
         this.id = id;
         this.titre = titre;
         this.description = description;
         this.note = note;
+        this.termine = termine;
         this.listePois = listePois;
         this.listePhotos = listePhotos;
         this.path = path;
     }
 
-    
     public String getId() {
         return id;
     }
@@ -62,6 +72,14 @@ public class Voyage {
         this.note = note;
     }
 
+    public boolean isTermine() {
+        return termine;
+    }
+
+    public void setTermine(boolean termine) {
+        this.termine = termine;
+    }
+
     public List<POI> getListePois() {
         return listePois;
     }
@@ -85,5 +103,4 @@ public class Voyage {
     public void setPath(List<Map<String, Object>> path) {
         this.path = path;
     }
-    
 }
