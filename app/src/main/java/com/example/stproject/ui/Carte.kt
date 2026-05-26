@@ -41,6 +41,8 @@ import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.views.overlay.MapEventsOverlay
 import com.example.stproject.Manager.PhotoManager
 import com.example.stproject.models.Photo
+import android.view.MotionEvent
+import android.view.View
 
 class Carte : AppCompatActivity() {
 
@@ -593,24 +595,63 @@ class Carte : AppCompatActivity() {
     }
 
     // Initialisation des boutons de l'interface
+    // Initialisation des boutons de l'interface
     private fun initButtons() {
-        val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
-        val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
-        val menuTitle = findViewById<TextView>(R.id.menuTitle)
-        val menuAddButton = findViewById<Button>(R.id.menuAddButton)
 
-        menuRecyclerView.layoutManager = LinearLayoutManager(this)
+        val drawerLayout =
+            findViewById<DrawerLayout>(R.id.drawerLayout)
+
+        val menuRecyclerView =
+            findViewById<RecyclerView>(R.id.menuRecyclerView)
+
+        val menuTitle =
+            findViewById<TextView>(R.id.menuTitle)
+
+        val menuAddButton =
+            findViewById<Button>(R.id.menuAddButton)
+
+        // Panneau Start / Pause / Stop déplaçable
+        val controlPanel =
+            findViewById<View>(R.id.controlPanel)
+
+        menuRecyclerView.layoutManager =
+            LinearLayoutManager(this)
+
+        // Permet de déplacer le panneau avec le doigt
+        controlPanel.setOnTouchListener { view, event ->
+
+            when (event.action) {
+
+                MotionEvent.ACTION_MOVE -> {
+
+                    view.x =
+                        event.rawX - view.width / 2
+
+                    view.y =
+                        event.rawY - view.height / 2
+
+                    true
+                }
+
+                else -> true
+            }
+        }
 
         // Ouvre le menu latéral
         findViewById<ImageView>(R.id.imageMenu).setOnClickListener {
+
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
         // Recentrage sur la position actuelle
         findViewById<ImageButton>(R.id.btnCenterLocation).setOnClickListener {
+
             locationOverlay.myLocation?.let {
+
                 map.controller.animateTo(it)
+
                 map.controller.setZoom(18.0)
+
             } ?: Toast.makeText(
                 this,
                 "Position indisponible",
@@ -619,10 +660,10 @@ class Carte : AppCompatActivity() {
         }
 
         // Onglet POI du menu latéral
-        // Onglet POI du menu latéral
         findViewById<TextView>(R.id.tabPoi).setOnClickListener {
 
             menuTitle.text = "Mes POI"
+
             menuAddButton.text = "+ Ajouter un POI"
 
             // Affichage des POI avec leurs photos associées
@@ -645,56 +686,75 @@ class Carte : AppCompatActivity() {
             )
 
             menuAddButton.setOnClickListener {
+
                 addPOIWithEditDialog()
             }
         }
 
         // Onglet Photos du menu latéral
         findViewById<TextView>(R.id.tabPhotos).setOnClickListener {
+
             menuTitle.text = "Mes Photos"
+
             menuAddButton.text = "+ Ajouter une photo"
 
             menuRecyclerView.adapter = SuggestionsAdapter(
                 listOf("Photos à charger depuis le backend")
             ) { selectedPhoto ->
-                Toast.makeText(this, selectedPhoto, Toast.LENGTH_SHORT).show()
+
+                Toast.makeText(
+                    this,
+                    selectedPhoto,
+                    Toast.LENGTH_SHORT
+                ).show()
             }
 
             menuAddButton.setOnClickListener {
+
                 photoPickerLauncher.launch("image/*")
             }
         }
 
         // Bouton par défaut du menu latéral
         menuAddButton.setOnClickListener {
+
             addPOIWithEditDialog()
         }
 
         // Bouton d'ajout flottant
         findViewById<FloatingActionButton>(R.id.fabAdd).setOnClickListener {
+
             showAddDialog()
         }
 
         // Bouton Start
         findViewById<ImageButton>(R.id.btnStart).setOnClickListener {
+
             sendLocationServiceAction("ACTION_START")
 
             if (tripState == TripState.PAUSED) {
+
                 showResumeDialog()
+
             } else {
+
                 startTrip()
             }
         }
 
         // Bouton Pause
         findViewById<ImageButton>(R.id.btnPause).setOnClickListener {
+
             sendLocationServiceAction("ACTION_PAUSE")
+
             pauseTrip()
         }
 
         // Bouton Stop
         findViewById<ImageButton>(R.id.btnStop).setOnClickListener {
+
             stopTrip()
+
             showStopDialog()
         }
     }
