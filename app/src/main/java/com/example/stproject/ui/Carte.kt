@@ -39,6 +39,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import androidx.activity.result.contract.ActivityResultContracts
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.views.overlay.MapEventsOverlay
+import com.example.stproject.Manager.PhotoManager
 
 class Carte : AppCompatActivity() {
 
@@ -735,10 +736,19 @@ class Carte : AppCompatActivity() {
                 return@registerForActivityResult
             }
 
+            val photoManager = PhotoManager(this)
+
+            val result = photoManager.analyzeSelectedPhotos(
+                uris,
+                LocationRepository.currentPath.value
+            )
+
             Toast.makeText(
                 this,
-                "${uris.size} photo(s) sélectionnée(s)",
-                Toast.LENGTH_SHORT
+                "Acceptées : ${result.acceptedPhotos.size} | " +
+                        "Hors trajet : ${result.outsideTripPhotos.size} | " +
+                        "À valider : ${result.manualValidationPhotos.size}",
+                Toast.LENGTH_LONG
             ).show()
         }
 }
