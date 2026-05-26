@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import android.location.Location
 import com.example.stproject.utils.ReductionListPoint
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.activity.result.contract.ActivityResultContracts
 
 class Carte : AppCompatActivity() {
 
@@ -577,7 +578,7 @@ class Carte : AppCompatActivity() {
             }
 
             menuAddButton.setOnClickListener {
-                Toast.makeText(this, "Ajout photo à implémenter", Toast.LENGTH_SHORT).show()
+                photoPickerLauncher.launch("image/*")
             }
         }
 
@@ -624,13 +625,14 @@ class Carte : AppCompatActivity() {
             .setItems(options) { _, which ->
 
                 when (which) {
-                    0 -> addPOIWithEditDialog()
 
-                    1 -> Toast.makeText(
-                        this,
-                        "Photo à implémenter",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    0 -> {
+                        addPOIWithEditDialog()
+                    }
+
+                    1 -> {
+                        photoPickerLauncher.launch("image/*")
+                    }
                 }
             }
             .show()
@@ -688,4 +690,19 @@ class Carte : AppCompatActivity() {
 
         dialog.show()
     }
+
+    private val photoPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+
+            if (uris.isEmpty()) {
+                Toast.makeText(this, "Aucune photo sélectionnée", Toast.LENGTH_SHORT).show()
+                return@registerForActivityResult
+            }
+
+            Toast.makeText(
+                this,
+                "${uris.size} photo(s) sélectionnée(s)",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 }
