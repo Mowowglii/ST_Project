@@ -37,6 +37,8 @@ import android.location.Location
 import com.example.stproject.utils.ReductionListPoint
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.activity.result.contract.ActivityResultContracts
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.views.overlay.MapEventsOverlay
 
 class Carte : AppCompatActivity() {
 
@@ -51,6 +53,9 @@ class Carte : AppCompatActivity() {
 
     // État actuel du voyage
     private var tripState = TripState.IDLE
+
+    // placement libre POI
+    private var isSelectingPoiLocation = false
 
     // Liste des POI ajoutés ou récupérés pour le voyage actuel
     private val poiList = mutableListOf<POI>()
@@ -101,6 +106,7 @@ class Carte : AppCompatActivity() {
         map.maxZoomLevel = 20.0
 
         setupGPS()
+        setupMapClickForPoi()
         chargerPOIDuVoyage()
         chargerTraceVoyage()
         observerTraceTempsReel()
@@ -139,6 +145,29 @@ class Carte : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // pour mettre un poi
+
+    private fun setupMapClickForPoi() {
+        val receiver = object : MapEventsReceiver {
+
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                if (isSelectingPoiLocation && p != null) {
+                    isSelectingPoiLocation = false
+                    ouvrirFormulairePoi(p.latitude, p.longitude)
+                    return true
+                }
+
+                return false
+            }
+
+            override fun longPressHelper(p: GeoPoint?): Boolean {
+                return false
+            }
+        }
+
+        map.overlays.add(MapEventsOverlay(receiver))
     }
 
     // Démarrage du voyage
@@ -331,6 +360,11 @@ class Carte : AppCompatActivity() {
     // Recharge la liste des POI affichée dans le menu latéral
     private fun refreshPoiMenu() {
         val menuRecyclerView = findViewById<RecyclerView>(R.id.menuRecyclerView)
+        val menuTitle = findViewById<TextView>(R.id.menuTitle)
+        val menuAddButton = findViewById<Button>(R.id.menuAddButton)
+
+        menuTitle.text = "Mes POI"
+        menuAddButton.text = "+ Ajouter un POI"
 
         menuRecyclerView.adapter = PoiAdapter(poiList) { poi ->
             Toast.makeText(this, poi.titre, Toast.LENGTH_SHORT).show()
@@ -339,60 +373,62 @@ class Carte : AppCompatActivity() {
 
     // Ouvre le formulaire de création d'un POI
     private fun addPOIWithEditDialog() {
-        locationOverlay.myLocation?.let { loc ->
+        isSelectingPoiLocation = true
 
-            val poi = POI(
-                "POI",
-                "",
-                0,
-                loc.latitude,
-                loc.longitude,
-                "autre"
-            )
-
-            PoiEditDialog(poi) { updatedPoi ->
-
-                tripId?.let {
-                    poiManager.definirVoyageActif(it)
-                }
-
-                poiManager.ajouterPOI(
-                    updatedPoi.titre,
-                    updatedPoi.description,
-                    updatedPoi.note,
-                    updatedPoi.latitude,
-                    updatedPoi.longitude,
-                    updatedPoi.type,
-                    object : POIManager.AjoutPOICallback {
-
-                        override fun onSuccess(poi: POI) {
-                            poiList.add(poi)
-                            afficherMarkerPOI(poi)
-                            refreshPoiMenu()
-
-                            Toast.makeText(
-                                this@Carte,
-                                "POI ajouté",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        override fun onError(message: String) {
-                            Toast.makeText(
-                                this@Carte,
-                                message,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                )
-            }.show(supportFragmentManager, "PoiEditDialog")
-
-        } ?: Toast.makeText(
+        Toast.makeText(
             this,
-            "Position GPS indisponible",
+            "Touchez la carte pour placer le POI",
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    private fun ouvrirFormulairePoi(latitude: Double, longitude: Double) {
+        val poi = POI(
+            "POI",
+            "",
+            0,
+            latitude,
+            longitude,
+            "autre"
+        )
+
+        PoiEditDialog(poi) { updatedPoi ->
+
+            tripId?.let {
+                poiManager.definirVoyageActif(it)
+            }
+
+            poiManager.ajouterPOI(
+                updatedPoi.titre,
+                updatedPoi.description,
+                updatedPoi.note,
+                updatedPoi.latitude,
+                updatedPoi.longitude,
+                updatedPoi.type,
+                object : POIManager.AjoutPOICallback {
+
+                    override fun onSuccess(poi: POI) {
+                        poiList.add(poi)
+                        afficherMarkerPOI(poi)
+                        refreshPoiMenu()
+
+                        Toast.makeText(
+                            this@Carte,
+                            "POI ajouté",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    override fun onError(message: String) {
+                        Toast.makeText(
+                            this@Carte,
+                            message,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }.show(supportFragmentManager, "PoiEditDialog")
     }
 
     // Configure le clic sur un marqueur POI
