@@ -61,11 +61,11 @@ public class CFCommunicator {
     }
 
     public void addTrip(Voyage trip){
-        // Créer l'emplacement pour le voyage
-        String id = getTripKey();
+        // Créer l'emplacement pour le voyage et déterminer l'id du trip
+        trip.setId(getTripKey());
 
         db.collection("voyages")
-                .document(id)
+                .document(trip.getId())
                 .set(trip)
                 .addOnSuccessListener(aVoid ->
                         Log.d("Firestore", "Voyage ajouté avec succès"))
@@ -274,17 +274,6 @@ public class CFCommunicator {
     // Images
 
     public void sendPictureToDb(String pathToPicture, String tripName){
-        Uri fileUri = Uri.fromFile(new File(pathToPicture));
-
-        StorageReference pictureRef = CSC.getCSCRef()
-                .child(tripName)
-                .child(fileUri.getLastPathSegment());
-
-        pictureRef.putFile(fileUri)
-                .addOnSuccessListener(taskSnapshot ->
-                        Log.d("CloudStorage", "Image envoyée avec succès"))
-                .addOnFailureListener(e ->
-                        Log.e("CloudStorage", "Erreur envoi image : " + e.getMessage()));
     }
 
     public interface PhotoCallback {
