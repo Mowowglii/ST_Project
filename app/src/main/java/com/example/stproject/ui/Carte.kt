@@ -491,7 +491,7 @@ class Carte : AppCompatActivity() {
             "other"
         )
 
-        PoiEditDialog(poi) { updatedPoi ->
+        PoiEditDialog(poi) { updatedPoi, _ ->
 
             poiManager.addPOI(
                 updatedPoi,
@@ -536,7 +536,7 @@ class Carte : AppCompatActivity() {
 
     // Ouvre le formulaire de modification d'un POI
     private fun showModifierPOIDialog(poi: POI, marker: Marker) {
-        PoiEditDialog(poi) { updatedPoi ->
+        PoiEditDialog(poi) { updatedPoi, _ ->
 
             poiManager.updatePOI(
                 updatedPoi,

@@ -43,7 +43,6 @@ class PoiEditDialog(
             for (uri in uris) {
                 val photo = Photo()
                 photo.imageURI = uri
-                photo.associatedPOI = poi
                 selectedPhotos.add(photo)
             }
 
