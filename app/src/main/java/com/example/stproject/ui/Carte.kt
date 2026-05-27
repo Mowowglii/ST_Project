@@ -257,10 +257,9 @@ class Carte : AppCompatActivity() {
                         }
                     }
 
-                    val reducedLocations =
-                        ReductionListPoint.douglasPeucker(locations)
+                   
 
-                    val geoPoints = reducedLocations.map { location ->
+                    val geoPoints = location.map { location ->
                         GeoPoint(location.latitude, location.longitude)
                     }
 
