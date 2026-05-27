@@ -11,7 +11,16 @@ import com.example.stproject.models.PhotoAnalysisStatus;
 
 import java.io.InputStream;
 import android.location.Location;
+import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.widget.Toast;
+import android.database.Cursor;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Cette classe sert à analyser une photo sélectionnée
@@ -41,13 +50,13 @@ public class PhotoAnalyzer {
         photo.setImageURI(imageUri);
 
         final double MAX_DISTANCE_METERS = 100.0;
+        final long MAX_TIME_DIFFERENCE_MS = 10 * 60 * 1000; // 10 minutes
 
         try {
-            // accès au donnée de l'image
-            InputStream inputStream =
-                    context.getContentResolver().openInputStream(imageUri);
+            ParcelFileDescriptor fileDescriptor =
+                    context.getContentResolver().openFileDescriptor(imageUri, "r");
 
-            if (inputStream == null) {
+            if (fileDescriptor == null) {
                 return new PhotoAnalysisResult(
                         photo,
                         PhotoAnalysisStatus.MANUAL_VALIDATION_REQUIRED,
@@ -56,52 +65,78 @@ public class PhotoAnalyzer {
                 );
             }
 
-            ExifInterface exifInterface = new ExifInterface(inputStream);
+            ExifInterface exifInterface =
+                    new ExifInterface(fileDescriptor.getFileDescriptor());
 
             float[] latLong = new float[2];
             boolean hasGps = exifInterface.getLatLong(latLong);
 
-            if (!hasGps) {
-                return new PhotoAnalysisResult(
-                        photo,
-                        PhotoAnalysisStatus.MANUAL_VALIDATION_REQUIRED,
-                        -1,
-                        "La photo ne contient pas de coordonnées GPS."
+            if (hasGps) {
+                photo.setLatitude(latLong[0]);
+                photo.setLongitude(latLong[1]);
+
+                fileDescriptor.close();
+
+                double distanceToTrip = calculateMinDistanceToPath(
+                        photo.getLatitude(),
+                        photo.getLongitude(),
+                        path
                 );
-            }
 
-            photo.setLatitude(latLong[0]);
-            photo.setLongitude(latLong[1]);
+                if (distanceToTrip <= MAX_DISTANCE_METERS) {
+                    return new PhotoAnalysisResult(
+                            photo,
+                            PhotoAnalysisStatus.ACCEPTED,
+                            distanceToTrip,
+                            "La photo appartient au voyage."
+                    );
+                }
 
-            double distanceToTrip = calculateMinDistanceToPath(
-                    photo.getLatitude(),
-                    photo.getLongitude(),
-                    path
-            );
-
-            if (distanceToTrip == -1) {
                 return new PhotoAnalysisResult(
                         photo,
-                        PhotoAnalysisStatus.MANUAL_VALIDATION_REQUIRED,
-                        -1,
-                        "Impossible de comparer la photo avec le tracé du voyage."
-                );
-            }
-
-            if (distanceToTrip <= MAX_DISTANCE_METERS) {
-                return new PhotoAnalysisResult(
-                        photo,
-                        PhotoAnalysisStatus.ACCEPTED,
+                        PhotoAnalysisStatus.OUTSIDE_TRIP,
                         distanceToTrip,
-                        "La photo appartient au voyage."
+                        "La photo est trop éloignée du trajet."
                 );
             }
+
+            String dateString =
+                    exifInterface.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
+
+            fileDescriptor.close();
+
+            long photoTime = parseExifDateToTimestamp(dateString);
+
+            if (photoTime == -1 || path == null || path.isEmpty()) {
+                return new PhotoAnalysisResult(
+                        photo,
+                        PhotoAnalysisStatus.MANUAL_VALIDATION_REQUIRED,
+                        -1,
+                        "Aucune donnée GPS ou date exploitable."
+                );
+            }
+
+            Location closestLocation =
+                    findClosestLocationByTime(photoTime, path, MAX_TIME_DIFFERENCE_MS);
+
+            if (closestLocation == null) {
+                return new PhotoAnalysisResult(
+                        photo,
+                        PhotoAnalysisStatus.MANUAL_VALIDATION_REQUIRED,
+                        -1,
+                        "Aucun point du trajet ne correspond à l'heure de la photo."
+                );
+            }
+
+            photo.setTimeStamp(photoTime);
+            photo.setLatitude(closestLocation.getLatitude());
+            photo.setLongitude(closestLocation.getLongitude());
 
             return new PhotoAnalysisResult(
                     photo,
-                    PhotoAnalysisStatus.OUTSIDE_TRIP,
-                    distanceToTrip,
-                    "La photo est trop éloignée du tracé du voyage."
+                    PhotoAnalysisStatus.ACCEPTED,
+                    0,
+                    "La photo a été associée au trajet grâce à son heure de prise."
             );
 
         } catch (Exception e) {
@@ -109,7 +144,7 @@ public class PhotoAnalyzer {
                     photo,
                     PhotoAnalysisStatus.MANUAL_VALIDATION_REQUIRED,
                     -1,
-                    "Erreur pendant l'analyse EXIF de la photo."
+                    "Erreur pendant l'analyse de la photo."
             );
         }
     }
@@ -130,14 +165,13 @@ public class PhotoAnalyzer {
 
         return results[0];
     }
-    /**
-     * Calcule la distance minimale entre la photo et les points du tracé du voyage.
-     */
-    private double calculateMinDistanceToPath(double photoLatitude,
-                                              double photoLongitude,
-                                              List<Location> path) {
+
+    private double calculateMinDistanceToPath(
+            double photoLatitude,
+            double photoLongitude,
+            List<Location> path
+    ) {
         if (path == null || path.isEmpty()) {
-            // Aucun calcul possible car aucune donnée géographique disponible
             return -1;
         }
 
@@ -157,5 +191,57 @@ public class PhotoAnalyzer {
         }
 
         return minDistance;
+    }
+    /**
+     * Calcule la distance minimale entre la photo et les points du tracé du voyage.
+     */
+    private long parseExifDateToTimestamp(String dateString) {
+        if (dateString == null || dateString.trim().isEmpty()) {
+            return -1;
+        }
+
+        try {
+            SimpleDateFormat format =
+                    new SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.getDefault());
+
+            Date date = format.parse(dateString);
+
+            if (date == null) {
+                return -1;
+            }
+
+            return date.getTime();
+
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    private Location findClosestLocationByTime(
+            long photoTime,
+            List<Location> path,
+            long maxDifferenceMs
+    ) {
+        Location closestLocation = null;
+        long smallestDifference = Long.MAX_VALUE;
+
+        for (Location location : path) {
+
+            long difference =
+                    Math.abs(location.getTime() - photoTime);
+
+            if (difference < smallestDifference) {
+                smallestDifference = difference;
+                closestLocation = location;
+            }
+        }
+
+        Toast.makeText(
+                context,
+                "Différence = " + smallestDifference,
+                Toast.LENGTH_LONG
+        ).show();
+
+        return closestLocation;
     }
 }

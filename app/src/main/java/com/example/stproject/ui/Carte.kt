@@ -84,6 +84,9 @@ class Carte : AppCompatActivity() {
     // ImageView du dialog de fin de voyage
     private var voyageImageView: ImageView? = null
 
+    private var isSelectingPhotoLocation = false
+    private var pendingPhotoForManualLocation: Photo? = null
+
     // Ouvre la galerie pour choisir une image du voyage
     private val voyageImagePickerLauncher =
         registerForActivityResult(
@@ -194,9 +197,21 @@ class Carte : AppCompatActivity() {
 
     private fun setupMapClickForPoi() {
         val receiver = object : MapEventsReceiver {
-
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                if (isSelectingPoiLocation && p != null) {
+                if (p == null) return false
+
+                if (isSelectingPhotoLocation) {
+                    isSelectingPhotoLocation = false
+                    pendingPhotoForManualLocation?.let { photo ->
+                        photo.latitude = p.latitude
+                        photo.longitude = p.longitude
+                        uploadAndSavePhoto(photo)
+                        pendingPhotoForManualLocation = null
+                    }
+                    return true
+                }
+
+                if (isSelectingPoiLocation) {
                     isSelectingPoiLocation = false
                     openPOIForm(p.latitude, p.longitude)
                     return true
@@ -900,9 +915,8 @@ class Carte : AppCompatActivity() {
     private val outsideTripPhotos = mutableListOf<Photo>()
     private val photoPickerLauncher =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-
             if (uris.isEmpty()) {
-                Toast.makeText(this, "No photo selected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Aucune photo sélectionnée", Toast.LENGTH_SHORT).show()
                 return@registerForActivityResult
             }
 
@@ -915,57 +929,12 @@ class Carte : AppCompatActivity() {
             )
 
             result.getAcceptedPhotos().forEach { analysisResult ->
-
-                val photo = analysisResult.photo
-                val imageUri = photo.imageURI ?: return@forEach
-
-                val fileName = "${System.currentTimeMillis()}.jpg"
-                val pathInStorage = "voyages/${currentTrip.id}/photos/$fileName"
-
-                val storageRef = com.google.firebase.storage.FirebaseStorage
-                    .getInstance()
-                    .reference
-                    .child(pathInStorage)
-
-                storageRef.putFile(imageUri)
-                    .addOnSuccessListener {
-
-                        photoManager.savePhotoToTrip(
-                            pathInStorage,
-                            object : PhotoManager.PhotoSaveCallback {
-
-                                override fun onSuccess(photoPath: String) {
-                                    acceptedPhotos.add(photo)
-
-                                    Toast.makeText(
-                                        this@Carte,
-                                        "Photo saved",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-
-                                override fun onError(error: String) {
-                                    Toast.makeText(
-                                        this@Carte,
-                                        error,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        )
-                    }
-                    .addOnFailureListener { error ->
-                        Toast.makeText(
-                            this@Carte,
-                            error.message ?: "Photo upload failed",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                uploadAndSavePhoto(analysisResult.photo)
             }
 
             result.getManualValidationPhotos().forEach { analysisResult ->
                 manualValidationPhotos.add(analysisResult.photo)
-                askManualPhotoValidation(analysisResult.photo, photoManager)
+                askManualPhotoLocation(analysisResult.photo)
             }
 
             outsideTripPhotos.addAll(
@@ -974,12 +943,56 @@ class Carte : AppCompatActivity() {
 
             Toast.makeText(
                 this,
-                "Accepted: ${result.getAcceptedPhotos().size} | " +
-                        "Outside trip: ${outsideTripPhotos.size} | " +
-                        "Manual validation: ${manualValidationPhotos.size}",
+                "Acceptées: ${result.getAcceptedPhotos().size} | " +
+                        "Hors trajet: ${result.getOutsideTripPhotos().size} | " +
+                        "Validation manuelle: ${result.getManualValidationPhotos().size}",
                 Toast.LENGTH_LONG
             ).show()
         }
+
+    private fun uploadAndSavePhoto(photo: Photo) {
+        val imageUri = photo.imageURI ?: return
+        val photoManager = PhotoManager(this)
+        photoManager.setCurrentTrip(currentTrip)
+
+        val fileName = "${System.currentTimeMillis()}.jpg"
+        val pathInStorage = "voyages/${currentTrip.id}/photos/$fileName"
+
+        val storageRef = com.google.firebase.storage.FirebaseStorage
+            .getInstance()
+            .reference
+            .child(pathInStorage)
+
+        storageRef.putFile(imageUri)
+            .addOnSuccessListener {
+                photoManager.savePhotoToTrip(
+                    pathInStorage,
+                    object : PhotoManager.PhotoSaveCallback {
+                        override fun onSuccess(photoPath: String) {
+                            acceptedPhotos.add(photo)
+                            displayPhotoMarker(photo)
+
+                            Toast.makeText(
+                                this@Carte,
+                                "Photo saved",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        override fun onError(error: String) {
+                            Toast.makeText(this@Carte, error, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+            .addOnFailureListener { error ->
+                Toast.makeText(
+                    this@Carte,
+                    error.message ?: "Échec de l'envoi",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+    }
 
     private fun loadPhotosForTrip() {
 
@@ -1064,6 +1077,65 @@ class Carte : AppCompatActivity() {
                     }
             }
             .setNegativeButton("Refuser", null)
+            .show()
+    }
+
+    private fun askManualPhotoLocation(photo: Photo) {
+        AlertDialog.Builder(this)
+            .setTitle("Photo sans localisation")
+            .setMessage("Voulez-vous placer cette photo manuellement sur la carte ?")
+            .setPositiveButton("Placer") { _, _ ->
+                pendingPhotoForManualLocation = photo
+                isSelectingPhotoLocation = true
+
+                Toast.makeText(
+                    this,
+                    "Touchez la carte pour placer la photo",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    private fun displayPhotoMarker(photo: Photo) {
+        val marker = Marker(map)
+
+        marker.position = GeoPoint(
+            photo.latitude,
+            photo.longitude
+        )
+
+        marker.title = "Photo"
+        marker.relatedObject = photo
+
+        marker.icon = ContextCompat.getDrawable(
+            this,
+            R.drawable.ic_photo
+        )
+
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+
+        marker.setOnMarkerClickListener { _, _ ->
+            showPhotoPreview(photo)
+            true
+        }
+
+        map.overlays.add(marker)
+        map.invalidate()
+    }
+
+    private fun showPhotoPreview(photo: Photo) {
+        val imageView = ImageView(this)
+
+        imageView.setImageURI(photo.imageURI)
+        imageView.adjustViewBounds = true
+        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+        AlertDialog.Builder(this)
+            .setTitle("Photo")
+            .setView(imageView)
+            .setPositiveButton("Fermer", null)
             .show()
     }
 }

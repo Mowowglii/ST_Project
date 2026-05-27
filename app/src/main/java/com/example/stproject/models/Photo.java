@@ -54,4 +54,5 @@ public class Photo {
 
     public void setTimeStamp(long timeStamp){this.timeStamp = timeStamp;}
     public long getTimeStamp(){return this.timeStamp;}
+
 }
