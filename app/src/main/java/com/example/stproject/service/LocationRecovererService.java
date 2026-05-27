@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
@@ -89,6 +90,12 @@ public class LocationRecovererService extends Service {
             dernierpoint=pointatraite.get(pointatraite.size()-1);
             /* on reduit la liste grace a notre algo douglasPeucker */
             List<Location> pointreduit = ReductionListPoint.douglasPeucker(pointatraite);
+            
+            /* Pour éviter les doublons dans Firestore, on retire le premier point s'il s'agit du point de raccordement */
+            if (!pointreduit.isEmpty() && pointatraite.size() > touslespoints.size()) {
+                pointreduit.remove(0);
+            }
+
             /* firestore je prend pas d object lourd donc on ajoute les donnees dans une liste d hasmap  */
             List<Map<String, Object>> pointaenvoyer = getMapList(pointreduit);
             cloudFirestoreCommunicator.addPathPoints(tripId, pointaenvoyer);
@@ -103,7 +110,7 @@ public class LocationRecovererService extends Service {
                     Map<String,Object>point=new HashMap<>();
                     point.put("latitude",localisation.getLatitude());
                     point.put("longitude",localisation.getLongitude());
-                    point.put("timestamp", localisation.getElapsedRealtimeNanos());
+                    point.put("timestamp", localisation.getTime());
                     pointaenvoyer.add(point);
                 }
 
@@ -136,15 +143,26 @@ public class LocationRecovererService extends Service {
             return START_STICKY; // réessayer un lancement
         }
 
-        // Recover TripId given by the intent
-        tripId = intent.getStringExtra("tripId");
+        // Recover TripId safely and handle trip transitions
+        String receivedTripId = intent.getStringExtra("tripId");
+        if (receivedTripId != null) {
+            // If we switch to a DIFFERENT trip, we must reset the continuity point
+            if (tripId != null && !tripId.equals(receivedTripId)) {
+                dernierpoint = null;
+            }
+            tripId = receivedTripId;
+        }
 
         switch (action){
             case "ACTION_START" :
                 if (!isTracking){
                     try {
                         /* créer un foreground service avec une notification */
-                        startForeground(NOTIFICATION_ID, buildNotification("Searching for position..."));
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            startForeground(NOTIFICATION_ID, buildNotification("Searching for position..."), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+                        } else {
+                            startForeground(NOTIFICATION_ID, buildNotification("Searching for position..."));
+                        }
                         flpClient.requestLocationUpdates(locationReq, callBack, Looper.getMainLooper());
                         isTracking = true;
                     } catch (SecurityException e){
