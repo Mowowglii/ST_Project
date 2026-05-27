@@ -106,53 +106,30 @@ public class CFCommunicator {
     }
 
     public void modifyTrip(Voyage trip) {
-        // First, find the document ID asynchronously by the trip title
+        // OPTIMIZED: Use trip.getId() directly since it's already defined
         db.collection("voyages")
-                .whereEqualTo("titre", trip.getTitre())
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        // Get the ID of the first matching document
-                        String docId = queryDocumentSnapshots.getDocuments().get(0).getId();
-
-                        // Update the document
-                        db.collection("voyages")
-                                .document(docId)
-                                .update(
-                                        "description", trip.getDescription(),
-                                        "note", trip.getNote()
-                                )
-                                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Voyage updated successfully"))
-                                .addOnFailureListener(e -> Log.e("Firestore", "Error updating voyage: " + e.getMessage()));
-                    } else {
-                        Log.e("Firestore", "Voyage not found for title: " + trip.getTitre());
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("Firestore", "Error searching for voyage: " + e.getMessage()));
+                .document(trip.getId())
+                .update(
+                        "description", trip.getDescription(),
+                        "note", trip.getNote()
+                )
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Voyage mis à jour"))
+                .addOnFailureListener(e -> Log.e("Firestore", "Erreur mise à jour", e));
     }
 
     public void deleteTrip(Voyage trip){
-        getKeyFromTripTitle(trip, new TripKeytitleCallback () {
-            @Override
-            public void onSuccess(String delId) {
-                delAllPoi(delId);
-                delPath(delId);
-                delAllPictures(trip.getTitre());
+        // OPTIMIZED: Use trip.getId() instead of searching by title
+        String delId = trip.getId();
 
-                db.collection("voyages")
-                        .document(delId)
-                        .delete()
-                        .addOnSuccessListener(aVoid ->
-                                Log.d("Firestore", "Voyage supprimé avec succès"))
-                        .addOnFailureListener(e ->
-                                Log.e("Firestore", "Erreur suppression voyage : " + e.getMessage()));
-            }
+        delAllPoi(delId);
+        delPath(delId);
+        delAllPictures(trip.getTitre());
 
-            @Override
-            public void onFailure(String error) {
-                Log.e("Firestore", "Impossible de supprimer le voyage : " + error);
-            }
-        });
+        db.collection("voyages")
+                .document(delId)
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Voyage supprimé"))
+                .addOnFailureListener(e -> Log.e("Firestore", "Erreur suppression voyage", e));
     }
 
     // POI
@@ -161,6 +138,7 @@ public class CFCommunicator {
         return db.collection("voyages")
                 .document(trip.getId())
                 .collection("pois")
+                .document()
                 .getId();
     }
 
@@ -183,14 +161,18 @@ public class CFCommunicator {
                 .document(trip.getId())
                 .collection("pois")
                 .document(poi.getIdPoi())
-                .set(poi);
+                .set(poi)
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "POI modifié"))
+                .addOnFailureListener(e -> Log.e("Firestore", "Erreur modification POI", e));
     }
     public void delPOIfromTrip(POI poi, Voyage trip) {
         db.collection("voyages")
                 .document(trip.getId())
                 .collection("pois")
                 .document(poi.getIdPoi())
-                .delete();
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "POI supprimé"))
+                .addOnFailureListener(e -> Log.e("Firestore", "Erreur suppression POI", e));
     }
 
     private void delAllPoi(String tripId){
@@ -375,12 +357,14 @@ public class CFCommunicator {
                 .document(tripId)
                 .collection("path")
                 .get()
-                .addOnCompleteListener(docs ->{
-                    WriteBatch batch = db.batch();
-                    for (DocumentSnapshot d : docs.getResult().getDocuments()) {
-                        batch.delete(d.getReference());
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        WriteBatch batch = db.batch();
+                        for (DocumentSnapshot d : task.getResult().getDocuments()) {
+                            batch.delete(d.getReference());
+                        }
+                        batch.commit();
                     }
-                    batch.commit();
                 });
     }
 
