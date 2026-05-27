@@ -1,25 +1,19 @@
 package com.example.stproject.data;
 
-import android.net.Uri;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import com.example.stproject.models.POI;
 import com.example.stproject.models.Photo;
 import com.example.stproject.models.Voyage;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.StorageReference;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class CFCommunicator {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -82,10 +76,7 @@ public class CFCommunicator {
                 .set(trip)
                 .addOnSuccessListener(aVoid ->
                         Log.d("Firestore", "Voyage ajouté avec succès"))
-                .addOnFailureListener(e -> {
-                    Log.e("Firestore", "Erreur ajout voyage : " + e.getMessage());
-
-                });
+                .addOnFailureListener(e -> Log.e("Firestore", "Erreur ajout voyage : " + e.getMessage()));
     }
     // récupère une liste de voyage.
     public interface TripsCallback {
@@ -182,12 +173,8 @@ public class CFCommunicator {
                 .collection("pois")
                 .document(poi.getIdPoi())
                 .set(poi)
-                .addOnSuccessListener(aVoid->{
-                    Log.d("FireStore", "Success of adding POI to trip in DB");
-                })
-                .addOnFailureListener(e ->{
-                    Log.e("FireStore", "Error during adding POI to trip in DB : "+ e.getMessage());
-                });
+                .addOnSuccessListener(aVoid-> Log.d("FireStore", "Success of adding POI to trip in DB"))
+                .addOnFailureListener(e -> Log.e("FireStore", "Error during adding POI to trip in DB : "+ e.getMessage()));
     }
 
     public void modifyPOIatTrip(POI poi, Voyage trip) {
@@ -275,12 +262,8 @@ public class CFCommunicator {
                 .collection("photos")
                 .document(photoId)
                 .set(data)
-                .addOnSuccessListener(aVoid ->{
-                    Log.d("FireStore", "Picture properly added to trip in DB");
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("FireStore", "Error during adding the picture to the DB :" + e.getMessage());
-                });
+                .addOnSuccessListener(aVoid -> Log.d("FireStore", "Picture properly added to trip in DB"))
+                .addOnFailureListener(e -> Log.e("FireStore", "Error during adding the picture to the DB :" + e.getMessage()));
     }
 
     public interface PhotoCallback {
@@ -332,12 +315,8 @@ public class CFCommunicator {
                 .collection("photos")
                 .document(pic.getPhotoIdInFirestore())
                 .delete()
-                .addOnSuccessListener(aVoid -> {
-                    Log.d("Firestore", "Picture deleted properly");
-                })
-                .addOnFailureListener(e->{
-                    Log.d("Firestore", "Deletion failed");
-                });
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Picture deleted properly"))
+                .addOnFailureListener(e-> Log.d("Firestore", "Deletion failed"));
     }
 
     // Chemin
