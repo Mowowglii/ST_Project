@@ -46,6 +46,7 @@ import com.example.stproject.Manager.POIManager
 import com.example.stproject.Manager.PathManager
 
 class Carte : AppCompatActivity() {
+    private lateinit var currentTrip: Voyage
 
     // Carte OpenStreetMap
     private lateinit var map: MapView
@@ -116,7 +117,7 @@ class Carte : AppCompatActivity() {
         // Initialisation du manager POI
         poiManager = POIManager()
 
-        val currentTrip = Voyage(
+        currentTrip = Voyage(
             tripId ?: "",
             tripName ?: "",
             "",
@@ -131,7 +132,7 @@ class Carte : AppCompatActivity() {
         pathManager.setCurrentTripId(tripId ?: "")
 
         val photoManager = PhotoManager(this)
-        photoManager.setCurrentTripId(tripId ?: "")
+        photoManager.setCurrentTrip(currentTrip)
 
         // Initialisation de la carte
         map = findViewById(R.id.map)
@@ -608,9 +609,7 @@ class Carte : AppCompatActivity() {
     }
 
     private fun getPhotosForPoi(poi: POI): List<Photo> {
-        return acceptedPhotos.filter { photo ->
-            photo.associatedPOI == poi
-        }
+        return emptyList()
     }
 
     // Initialisation des boutons de l'interface
@@ -903,16 +902,12 @@ class Carte : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
 
             if (uris.isEmpty()) {
-                Toast.makeText(
-                    this,
-                    "No photo selected",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "No photo selected", Toast.LENGTH_SHORT).show()
                 return@registerForActivityResult
             }
 
             val photoManager = PhotoManager(this)
-            photoManager.setCurrentTripId(tripId ?: "")
+            photoManager.setCurrentTrip(currentTrip)
 
             val result = photoManager.analyzeSelectedPhotos(
                 uris,
@@ -921,29 +916,51 @@ class Carte : AppCompatActivity() {
 
             result.getAcceptedPhotos().forEach { analysisResult ->
 
-                photoManager.savePhotoToTrip(
-                    analysisResult.photo,
-                    object : PhotoManager.PhotoCallback {
+                val photo = analysisResult.photo
+                val imageUri = photo.imageURI ?: return@forEach
 
-                        override fun onSuccess(photo: Photo) {
-                            acceptedPhotos.add(photo)
+                val fileName = "${System.currentTimeMillis()}.jpg"
+                val pathInStorage = "voyages/${currentTrip.id}/photos/$fileName"
 
-                            Toast.makeText(
-                                this@Carte,
-                                "Photo saved",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                val storageRef = com.google.firebase.storage.FirebaseStorage
+                    .getInstance()
+                    .reference
+                    .child(pathInStorage)
 
-                        override fun onError(error: String) {
-                            Toast.makeText(
-                                this@Carte,
-                                error,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                storageRef.putFile(imageUri)
+                    .addOnSuccessListener {
+
+                        photoManager.savePhotoToTrip(
+                            pathInStorage,
+                            object : PhotoManager.PhotoSaveCallback {
+
+                                override fun onSuccess(photoPath: String) {
+                                    acceptedPhotos.add(photo)
+
+                                    Toast.makeText(
+                                        this@Carte,
+                                        "Photo saved",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                override fun onError(error: String) {
+                                    Toast.makeText(
+                                        this@Carte,
+                                        error,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        )
                     }
-                )
+                    .addOnFailureListener { error ->
+                        Toast.makeText(
+                            this@Carte,
+                            error.message ?: "Photo upload failed",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
             }
 
             manualValidationPhotos.addAll(
@@ -966,14 +983,19 @@ class Carte : AppCompatActivity() {
     private fun loadPhotosForTrip() {
 
         val photoManager = PhotoManager(this)
-        photoManager.setCurrentTripId(tripId ?: "")
+        photoManager.setCurrentTrip(currentTrip)
 
         photoManager.getPhotosForCurrentTrip(
             object : PhotoManager.PhotoListCallback {
 
-                override fun onSuccess(photos: List<Photo>) {
-                    acceptedPhotos.clear()
-                    acceptedPhotos.addAll(photos)
+                override fun onSuccess(photoPaths: List<String>) {
+                    for (path in photoPaths) {
+
+                        val photo = Photo()
+                        photo.imageURI = android.net.Uri.parse(path)
+
+                        acceptedPhotos.add(photo)
+                    }
                 }
 
                 override fun onError(error: String) {

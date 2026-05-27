@@ -110,8 +110,18 @@ public class TripManager {
         callback.onSuccess();
     }
 
-    public void getAllTrips(CFCommunicator.TripsCallback callback) {
-        cfCommunicator.getAllTrips(callback);
+    public void getAllTrips(final TripsCallback callback) {
+        cfCommunicator.getAllTrips(new CFCommunicator.TripsCallback() {
+            @Override
+            public void onSuccess(List<Voyage> voyages) {
+                callback.onSuccess(voyages);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                callback.onError(error);
+            }
+        });
     }
 }
 
