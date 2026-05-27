@@ -20,17 +20,23 @@ public class CFCommunicator {
 
     private final CloudStorageCommunicator CSC = new CloudStorageCommunicator(this);
 
+    public interface SimpleCallback {
+        void onDone();
+    }
     // Voyage
     public String getTripKey(){
         return db.collection("voyages")
                 .document()
                 .getId();
     }
+    
 
     public interface TripKeytitleCallback {
         void onSuccess(String tripId);
         void onFailure(String error);
     }
+
+    
 
     public void getKeyFromTripTitle(Voyage trip, TripKeytitleCallback callback) {
         db.collection("voyages")
@@ -117,20 +123,39 @@ public class CFCommunicator {
                 .addOnFailureListener(e -> Log.e("Firestore", "Erreur mise à jour", e));
     }
 
-    public void deleteTrip(Voyage trip){
-        // OPTIMIZED: Use trip.getId() instead of searching by title
-        String delId = trip.getId();
+    public void deleteTrip(Voyage trip) {
+        String tripId = trip.getId();
 
-        delAllPoi(delId);
-        delPath(delId);
-        delAllPictures(trip.getTitre());
+        delAllPoi(tripId, new SimpleCallback() {
+            @Override
+            public void onDone() {
 
-        db.collection("voyages")
-                .document(delId)
-                .delete()
-                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Voyage supprimé"))
-                .addOnFailureListener(e -> Log.e("Firestore", "Erreur suppression voyage", e));
+                delPath(tripId, new SimpleCallback() {
+                    @Override
+                    public void onDone() {
+
+                        delAllPictures(trip.getTitre(), new SimpleCallback() {
+                            @Override
+                            public void onDone() {
+
+                                db.collection("voyages")
+                                    .document(tripId)
+                                    .delete()
+                                    .addOnSuccessListener(aVoid ->
+                                            Log.d("Firestore", "Voyage supprimé"))
+                                    .addOnFailureListener(e ->
+                                            Log.e("Firestore", "Erreur suppression voyage", e));
+
+                            }
+                        });
+
+                    }
+                });
+
+            }
+        });
     }
+
 
     // POI
 
@@ -175,26 +200,36 @@ public class CFCommunicator {
                 .addOnFailureListener(e -> Log.e("Firestore", "Erreur suppression POI", e));
     }
 
-    private void delAllPoi(String tripId){
+    public void delAllPoi(String tripId, SimpleCallback callback) {
         db.collection("voyages")
-                .document(tripId)
-                .collection("pois")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    // Create a batch to perform multiple deletions in one request
-                    WriteBatch batch = db.batch();
+            .document(tripId)
+            .collection("pois")
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
 
-                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                        batch.delete(doc.getReference());
-                    }
+                WriteBatch batch = db.batch();
 
-                    // Execute the batch
-                    batch.commit()
-                            .addOnSuccessListener(aVoid -> Log.d("Firestore", "Sub-collection 'pois' deleted successfully"))
-                            .addOnFailureListener(e -> Log.e("Firestore", "Error committing batch delete", e));
-                })
-                .addOnFailureListener(e -> Log.e("Firestore", "Error fetching POIs for deletion", e));
+                for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                    batch.delete(doc.getReference());
+                }
+
+                batch.commit()
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d("Firestore", "POIs supprimés");
+                            callback.onDone();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("Firestore", "Erreur batch POI", e);
+                            callback.onDone(); // on continue quand même
+                        });
+
+            })
+            .addOnFailureListener(e -> {
+                Log.e("Firestore", "Erreur fetch POI", e);
+                callback.onDone();
+            });
     }
+
     public interface POIsCallback {
         void onSuccess(List<POI> pois);
         void onFailure(String error);
@@ -278,17 +313,39 @@ public class CFCommunicator {
                         callback.onFailure(e.getMessage()));
     }
 
-    public void delAllPictures(String tripName) {
-        // Asynchronously list all files in the trip folder
+    public void delAllPictures(String tripName, SimpleCallback callback) {
         CSC.getCSCRef().child(tripName).listAll()
-                .addOnSuccessListener(listResult -> {
-                    // Iterate through all files and delete them
-                    for (StorageReference file : listResult.getItems()) {
-                        file.delete().addOnFailureListener(e ->
-                                Log.e("CloudStorage", "Failed to delete " + file.getName()));
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("CloudStorage", "Error listing files: " + e.getMessage()));
+            .addOnSuccessListener(listResult -> {
+
+                if (listResult.getItems().isEmpty()) {
+                    callback.onDone();
+                    return;
+                }
+
+                final int[] remaining = {listResult.getItems().size()};
+
+                for (StorageReference file : listResult.getItems()) {
+                    file.delete()
+                            .addOnSuccessListener(aVoid -> {
+                               remaining[0]--;
+                                if (remaining[0] == 0) {
+                                    callback.onDone();
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("CloudStorage", "Échec suppression fichier: " + file.getName());
+                               remaining[0]--;
+                                if (remaining[0] == 0) {
+                                    callback.onDone();
+                                }
+                            });
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e("CloudStorage", "Erreur listing files: " + e.getMessage());
+               callback.onDone(); 
+            });
+
     }
 
     public void delPicture(Photo pic){
@@ -308,11 +365,15 @@ public class CFCommunicator {
         WriteBatch batch = db.batch();
 
         for (Map<String, Object> point : points) {
+            Object tsObj = point.get("timestamp");
+
+
+        String docId = String.valueOf(tsObj);
             batch.set(
                     db.collection("voyages")
                             .document(tripId)
                             .collection("path")
-                            .document(),
+                            .document(docId),
                     point
             );
         }
@@ -352,21 +413,33 @@ public class CFCommunicator {
 
 
 
-    private void delPath(String tripId){
+    public void delPath(String tripId, SimpleCallback callback) {
         db.collection("voyages")
-                .document(tripId)
-                .collection("path")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        WriteBatch batch = db.batch();
-                        for (DocumentSnapshot d : task.getResult().getDocuments()) {
-                            batch.delete(d.getReference());
-                        }
-                        batch.commit();
-                    }
-                });
+            .document(tripId)
+            .collection("path")
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                WriteBatch batch = db.batch();
+
+                for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                    batch.delete(doc.getReference());
+                }
+
+                batch.commit()
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d("Firestore", "Path supprimé");
+                            callback.onDone();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("Firestore", "Erreur path batch", e);
+                            callback.onDone();
+                        });
+
+            })
+            .addOnFailureListener(e -> callback.onDone());
     }
+
 
 
 }
