@@ -243,16 +243,30 @@ class Carte : AppCompatActivity() {
 
                 override fun onSuccess(points: List<Map<String, Any>>) {
 
+                    val sortedPoints = points.sortedBy { point ->
+                        (point["timestamp"] as? Number)?.toLong() ?: 0L
+                    }
+
                     val locations = mutableListOf<Location>()
 
-                    for (point in points) {
+                    for (point in sortedPoints) {
+
                         val lat = point["latitude"] as? Double
                         val lon = point["longitude"] as? Double
+                        val timestamp =
+                            (point["timestamp"] as? Number)?.toLong()
 
                         if (lat != null && lon != null) {
+
                             val location = Location("firestore")
+
                             location.latitude = lat
                             location.longitude = lon
+
+                            if (timestamp != null) {
+                                location.time = timestamp
+                            }
+
                             locations.add(location)
                         }
                     }
@@ -261,10 +275,14 @@ class Carte : AppCompatActivity() {
                         ReductionListPoint.douglasPeucker(locations)
 
                     val geoPoints = reducedLocations.map { location ->
-                        GeoPoint(location.latitude, location.longitude)
+                        GeoPoint(
+                            location.latitude,
+                            location.longitude
+                        )
                     }
 
                     if (geoPoints.isNotEmpty()) {
+
                         routeLine?.let {
                             map.overlays.remove(it)
                         }
@@ -275,11 +293,15 @@ class Carte : AppCompatActivity() {
                         }
 
                         map.overlays.add(routeLine)
+
+                        map.controller.animateTo(geoPoints.last())
+
                         map.invalidate()
                     }
                 }
 
                 override fun onError(error: String) {
+
                     Toast.makeText(
                         this@Carte,
                         error,
@@ -731,16 +753,60 @@ class Carte : AppCompatActivity() {
 
             menuAddButton.text = "+ Ajouter une photo"
 
-            menuRecyclerView.adapter = SuggestionsAdapter(
-                listOf("Photos à charger depuis le backend")
-            ) { selectedPhoto ->
+            menuRecyclerView.adapter = PhotoAdapter(
 
-                Toast.makeText(
-                    this,
-                    selectedPhoto,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+                acceptedPhotos,
+
+                onPhotoClick = { photo ->
+                    showPhotoPreview(photo)
+                },
+
+                onDeleteClick = { photo ->
+
+                    AlertDialog.Builder(this)
+                        .setTitle("Supprimer la photo")
+                        .setMessage("Voulez-vous vraiment supprimer cette photo ?")
+
+                        .setPositiveButton("Supprimer") { _, _ ->
+
+                            val photoManager = PhotoManager(this)
+
+                            photoManager.setCurrentTrip(currentTrip)
+
+                            photoManager.deletePhoto(
+                                photo,
+
+                                object : PhotoManager.PhotoDeleteCallback {
+
+                                    override fun onSuccess(photo: Photo) {
+
+                                        acceptedPhotos.remove(photo)
+
+                                        menuRecyclerView.adapter?.notifyDataSetChanged()
+
+                                        Toast.makeText(
+                                            this@Carte,
+                                            "Photo supprimée",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                    override fun onError(error: String) {
+
+                                        Toast.makeText(
+                                            this@Carte,
+                                            error,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            )
+                        }
+
+                        .setNegativeButton("Annuler", null)
+                        .show()
+                }
+            )
 
             menuAddButton.setOnClickListener {
 
@@ -969,6 +1035,7 @@ class Carte : AppCompatActivity() {
                     pathInStorage,
                     object : PhotoManager.PhotoSaveCallback {
                         override fun onSuccess(photoPath: String) {
+                            photo.setAssociatedTrip(currentTrip.id)
                             acceptedPhotos.add(photo)
                             displayPhotoMarker(photo)
 
