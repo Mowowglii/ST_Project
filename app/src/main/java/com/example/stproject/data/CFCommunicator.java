@@ -365,11 +365,15 @@ public class CFCommunicator {
         WriteBatch batch = db.batch();
 
         for (Map<String, Object> point : points) {
+            Object tsObj = point.get("timestamp");
+
+
+        String docId = String.valueOf(tsObj);
             batch.set(
                     db.collection("voyages")
                             .document(tripId)
                             .collection("path")
-                            .document(),
+                            .document(docId),
                     point
             );
         }
