@@ -16,7 +16,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.stproject.R;
-import com.example.stproject.data.CloudFirestoreCommunicator;
+import com.example.stproject.data.CFCommunicator;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.location.LocationCallback;
@@ -50,8 +50,10 @@ public class LocationRecovererService extends Service {
 
     private CallbackOnLocation callBack;
 
+    private static String tripId;
+
     /* Instance du communicator de Firestore database */
-    private static final CloudFirestoreCommunicator cloudFirestoreCommunicator = new CloudFirestoreCommunicator();
+    private static final CFCommunicator cloudFirestoreCommunicator = new CFCommunicator();
 
     /* Booléen qui précise si on est déjà en suivi ou non */
     private boolean isTracking = false;
@@ -89,13 +91,13 @@ public class LocationRecovererService extends Service {
             List<Location> pointreduit = ReductionListPoint.douglasPeucker(pointatraite);
             /* firestore je prend pas d object lourd donc on ajoute les donnees dans une liste d hasmap  */
             List<Map<String, Object>> pointaenvoyer = getMapList(pointreduit);
-            cloudFirestoreCommunicator.ajout_path(pointaenvoyer);
+            cloudFirestoreCommunicator.addPathPoints(tripId, pointaenvoyer);
         }
 
         @NonNull
         private static List<Map<String, Object>> getMapList(List<Location> pointreduit) {
             List<Map<String, Object>> pointaenvoyer = new ArrayList<>();
-            for (int i = 0; i < pointreduit.size() - 1; i++){
+            for (int i = 0; i < pointreduit.size(); i++){
                 Location localisation= pointreduit.get(i);
                 if (localisation !=null){
                     Map<String,Object>point=new HashMap<>();
@@ -133,6 +135,9 @@ public class LocationRecovererService extends Service {
         } else {
             return START_STICKY; // réessayer un lancement
         }
+
+        // Recover TripId given by the intent
+        tripId = intent.getStringExtra("tripId");
 
         switch (action){
             case "ACTION_START" :
