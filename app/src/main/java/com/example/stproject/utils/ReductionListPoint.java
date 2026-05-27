@@ -39,7 +39,7 @@ public class ReductionListPoint{
             }
         }
         List<Location> listereduit = new ArrayList<>();
-        if (maxaire>0.00005 && indicedupivot != -1){
+        if (maxaire>0.00008 && indicedupivot != -1){
             List<Location> debutAuPivot = points.subList(0, indicedupivot + 1);
             List<Location> pivotAlaFin = points.subList(indicedupivot, points.size());
             List<Location> resultatGauche = douglasPeucker(debutAuPivot);
