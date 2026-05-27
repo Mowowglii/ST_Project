@@ -35,6 +35,7 @@ import java.util.Objects;
 
 import com.example.stproject.utils.ReductionListPoint;
 import android.location.Location;
+import android.util.Log;
 
 public class LocationRecovererService extends Service {
     /* Définir l'id du channel pour la notification */
@@ -66,6 +67,7 @@ public class LocationRecovererService extends Service {
         public void onLocationAvailability(LocationAvailability availability){
             if (!availability.isLocationAvailable()) {
                 /* Préciser que l'obtention de sa localisation est impossible */
+                Log.d("LocationRecovererService", "Location Not Available");
             }
         }
 
