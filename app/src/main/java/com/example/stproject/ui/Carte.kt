@@ -159,6 +159,7 @@ class Carte : AppCompatActivity() {
     private fun sendLocationServiceAction(action: String) {
         val intent = Intent(this, LocationRecovererService::class.java)
         intent.action = action
+        intent.putExtra("tripId", tripId)
         startService(intent)
     }
 

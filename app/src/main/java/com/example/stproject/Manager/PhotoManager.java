@@ -114,7 +114,7 @@ public class PhotoManager {
 
         photo.setIdVoyage(currentTripId);
 
-        cfCommunicator.savePhotoToTrip(
+        cfCommunicator.sendPictureToDb(
                 photo,
                 currentTripId,
                 new CFCommunicator.PhotoCallback() {

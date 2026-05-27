@@ -4,6 +4,7 @@ import com.example.stproject.data.CFCommunicator;
 import com.example.stproject.models.Voyage;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class TripManager {
 
@@ -25,6 +26,11 @@ public class TripManager {
     // Pour createNewTrip
     public interface TripCreationCallback {
         void onSuccess(String tripId, Voyage trip);
+        void onError(String error);
+    }
+
+    public interface TripsCallback {
+        void onSuccess(List<Voyage> voyages);
         void onError(String error);
     }
 
