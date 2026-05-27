@@ -89,26 +89,22 @@ public class PhotoManager {
 
     public void getPhotosForCurrentTrip(PhotoListCallback callback) {
 
-        if (currentTrip == null || currentTrip.getId() == null || currentTrip.getId().trim().isEmpty()) {
+        if (currentTrip == null || currentTrip.getId() == null) {
             callback.onError("No trip selected");
             return;
         }
 
-        cfCommunicator.getPhotosForTrip(
-                currentTrip,
-                new CFCommunicator.PhotoCallback() {
+        cfCommunicator.getPhotosForTrip(currentTrip, new CFCommunicator.PhotoCallback() {
+            @Override
+            public void onSuccess(List<String> photoPaths) {
+                callback.onSuccess(photoPaths);
+            }
 
-                    @Override
-                    public void onSuccess(List<String> photoPaths) {
-                        callback.onSuccess(photoPaths);
-                    }
-
-                    @Override
-                    public void onFailure(String error) {
-                        callback.onError(error);
-                    }
-                }
-        );
+            @Override
+            public void onFailure(String error) {
+                callback.onError(error);
+            }
+        });
     }
 
     public static class PhotoSelectionResult {
@@ -138,5 +134,32 @@ public class PhotoManager {
         public List<PhotoAnalysisResult> getManualValidationPhotos() {
             return manualValidationPhotos;
         }
+    }
+
+    public interface PhotoDeleteCallback {
+        void onSuccess(Photo photo);
+        void onError(String error);
+    }
+
+    public void deletePhoto(Photo photo, PhotoDeleteCallback callback) {
+
+        if (photo == null) {
+            callback.onError("Photo is invalid");
+            return;
+        }
+
+        if (photo.getAssociatedTrip() == null || photo.getAssociatedTrip().trim().isEmpty()) {
+            callback.onError("No trip associated with this photo");
+            return;
+        }
+
+        if (photo.getPhotoIdInFirestore() == null || photo.getPhotoIdInFirestore().trim().isEmpty()) {
+            callback.onError("Photo Firestore id is missing");
+            return;
+        }
+
+        cfCommunicator.delPicture(photo);
+
+        callback.onSuccess(photo);
     }
 }

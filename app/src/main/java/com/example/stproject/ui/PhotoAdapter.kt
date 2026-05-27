@@ -1,19 +1,17 @@
 package com.example.stproject.ui
 
-import android.net.Uri
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.stproject.R
 import com.example.stproject.models.Photo
-import android.view.View
 
-/**
- * Adapter utilisé pour afficher les photos du voyage dans le menu "Mes Photos".
- */
 class PhotoAdapter(
-    private val photos: List<Photo>
+    private val photos: List<Photo>,
+    private val onPhotoClick: (Photo) -> Unit,
+    private val onDeleteClick: (Photo) -> Unit
 ) : RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder>() {
 
     class PhotoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -31,8 +29,16 @@ class PhotoAdapter(
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
         val photo = photos[position]
 
-        photo.imageURI?.let {
-            holder.photoImage.setImageURI(it)
+        photo.imageURI?.let { uri ->
+            holder.photoImage.setImageURI(uri)
+        }
+
+        holder.photoImage.setOnClickListener {
+            onPhotoClick(photo)
+        }
+
+        holder.btnDeletePhoto.setOnClickListener {
+            onDeleteClick(photo)
         }
     }
 
