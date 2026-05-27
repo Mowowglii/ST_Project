@@ -17,7 +17,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.stproject.R
-import com.example.stproject.data.CloudFirestoreCommunicator
 import com.example.stproject.models.POI
 import com.example.stproject.service.LocationRecovererService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -44,6 +43,7 @@ import android.view.MotionEvent
 import android.view.View
 import com.example.stproject.models.Voyage
 import com.example.stproject.Manager.POIManager
+import com.example.stproject.Manager.PathManager
 
 class Carte : AppCompatActivity() {
 
@@ -74,6 +74,8 @@ class Carte : AppCompatActivity() {
 
     // Manager utilisé pour gérer les POI côté backend
     private lateinit var poiManager: POIManager
+
+    private lateinit var pathManager: PathManager
 
     // Image choisie pour le voyage terminé
     private var selectedTripImageUri: android.net.Uri? = null
@@ -120,13 +122,16 @@ class Carte : AppCompatActivity() {
             "",
             null,
             false,
-            mutableListOf(),
-            mutableListOf(),
-            mutableListOf()
         )
 
         // Définit le voyage actif pour les ajouts, modifications et suppressions de POI
         poiManager.setCurrentTrip(currentTrip)
+        // Pour chemin
+        pathManager = PathManager()
+        pathManager.setCurrentTripId(tripId ?: "")
+
+        val photoManager = PhotoManager(this)
+        photoManager.setCurrentTripId(tripId ?: "")
 
         // Initialisation de la carte
         map = findViewById(R.id.map)
@@ -143,8 +148,9 @@ class Carte : AppCompatActivity() {
         setupGPS()
         setupMapClickForPoi()
         loadPOIsForTrip()
-        chargerTraceVoyage()
-        observerTraceTempsReel()
+        loadPhotosForTrip()
+        loadTripPath()
+        observeRealtimePath()
         initButtons()
         updateTripStatus()
     }
@@ -153,6 +159,7 @@ class Carte : AppCompatActivity() {
     private fun sendLocationServiceAction(action: String) {
         val intent = Intent(this, LocationRecovererService::class.java)
         intent.action = action
+        intent.putExtra("tripId", tripId)
         startService(intent)
     }
 
@@ -213,72 +220,68 @@ class Carte : AppCompatActivity() {
     }
 
     // Charge le tracé déjà enregistré du voyage depuis Firestore
-    private fun chargerTraceVoyage() {
-        tripId?.let { voyageId ->
+    private fun loadTripPath() {
 
-            val communicator = CloudFirestoreCommunicator()
+        pathManager.getPathForCurrentTrip(
+            object : PathManager.PathCallback {
 
-            communicator.recuperer_path_voyage(
-                voyageId,
-                object : CloudFirestoreCommunicator.PathCallback {
+                override fun onSuccess(points: List<Map<String, Any>>) {
 
-                    override fun onComplete(path: List<Map<String, Any>>) {
-                        val locations = mutableListOf<Location>()
+                    val locations = mutableListOf<Location>()
 
-                        for (point in path) {
-                            val lat = point["latitude"] as? Double
-                            val lon = point["longitude"] as? Double
+                    for (point in points) {
+                        val lat = point["latitude"] as? Double
+                        val lon = point["longitude"] as? Double
 
-                            if (lat != null && lon != null) {
-                                val location = Location("firestore")
-                                location.latitude = lat
-                                location.longitude = lon
-                                locations.add(location)
-                            }
-                        }
-
-                        val locationsReduites =
-                            ReductionListPoint.douglasPeucker(locations)
-
-                        val points = locationsReduites.map { location ->
-                            GeoPoint(location.latitude, location.longitude)
-                        }
-
-                        if (points.isNotEmpty()) {
-                            routeLine?.let {
-                                map.overlays.remove(it)
-                            }
-
-                            routeLine = Polyline().apply {
-                                setPoints(points)
-                                styliserTrace(this)
-                            }
-
-                            map.overlays.add(routeLine)
-                            map.invalidate()
+                        if (lat != null && lon != null) {
+                            val location = Location("firestore")
+                            location.latitude = lat
+                            location.longitude = lon
+                            locations.add(location)
                         }
                     }
 
-                    override fun onError(error: String) {
-                        Toast.makeText(
-                            this@Carte,
-                            error,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    val reducedLocations =
+                        ReductionListPoint.douglasPeucker(locations)
+
+                    val geoPoints = reducedLocations.map { location ->
+                        GeoPoint(location.latitude, location.longitude)
+                    }
+
+                    if (geoPoints.isNotEmpty()) {
+                        routeLine?.let {
+                            map.overlays.remove(it)
+                        }
+
+                        routeLine = Polyline().apply {
+                            setPoints(geoPoints)
+                            styliserTrace(this)
+                        }
+
+                        map.overlays.add(routeLine)
+                        map.invalidate()
                     }
                 }
-            )
-        }
+
+                override fun onError(error: String) {
+                    Toast.makeText(
+                        this@Carte,
+                        error,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
     }
 
-    private fun observerTraceTempsReel() {
+    private fun observeRealtimePath() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 LocationRepository.currentPath.collect { locations ->
 
                     if (locations.isEmpty()) return@collect
 
-                    val points = locations.map { location ->
+                    val geoPoints = locations.map { location ->
                         GeoPoint(location.latitude, location.longitude)
                     }
 
@@ -290,7 +293,7 @@ class Carte : AppCompatActivity() {
                         map.overlays.add(routeLine)
                     }
 
-                    routeLine?.setPoints(points)
+                    routeLine?.setPoints(geoPoints)
 
                     val lastLocation = locations.last()
                     val lastPoint = GeoPoint(
@@ -499,11 +502,6 @@ class Carte : AppCompatActivity() {
 
             poiManager.updatePOI(
                 updatedPoi,
-                poi,
-                updatedPoi.titre,
-                updatedPoi.description,
-                updatedPoi.type,
-                updatedPoi.note,
                 object : POIManager.POICallback {
 
                     override fun onSuccess(poiModifie: POI) {
@@ -533,7 +531,7 @@ class Carte : AppCompatActivity() {
     }
 
     // Supprime un POI du backend et de la carte
-    private fun supprimerPOI(poi: POI, marker: Marker) {
+    private fun DeletePOI(poi: POI, marker: Marker) {
         poiManager.deletePOI(
             poi,
             object : POIManager.POICallback {
@@ -546,15 +544,15 @@ class Carte : AppCompatActivity() {
 
                     Toast.makeText(
                         this@Carte,
-                        "POI supprimé",
+                        "POI deleted",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
 
-                override fun onError(message: String) {
+                override fun onError(error: String) {
                     Toast.makeText(
                         this@Carte,
-                        message,
+                        error,
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -575,7 +573,7 @@ class Carte : AppCompatActivity() {
                 showModifierPOIDialog(poi, marker)
             }
             .setNegativeButton("Supprimer") { _, _ ->
-                supprimerPOI(poi, marker)
+                DeletePOI(poi, marker)
             }
             .setNeutralButton("Fermer", null)
             .show()
@@ -875,7 +873,8 @@ class Carte : AppCompatActivity() {
 
         btnFinish.setOnClickListener {
             dialog.dismiss()
-            afficherDialogNotationVoyage()
+
+            goToHome()
         }
 
         btnDelete.setOnClickListener {
@@ -904,20 +903,48 @@ class Carte : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
 
             if (uris.isEmpty()) {
-                Toast.makeText(this, "Aucune photo sélectionnée", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "No photo selected",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@registerForActivityResult
             }
 
             val photoManager = PhotoManager(this)
+            photoManager.setCurrentTripId(tripId ?: "")
 
             val result = photoManager.analyzeSelectedPhotos(
                 uris,
                 LocationRepository.currentPath.value
             )
 
-            acceptedPhotos.addAll(
-                result.getAcceptedPhotos().map { it.photo }
-            )
+            result.getAcceptedPhotos().forEach { analysisResult ->
+
+                photoManager.savePhotoToTrip(
+                    analysisResult.photo,
+                    object : PhotoManager.PhotoCallback {
+
+                        override fun onSuccess(photo: Photo) {
+                            acceptedPhotos.add(photo)
+
+                            Toast.makeText(
+                                this@Carte,
+                                "Photo saved",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        override fun onError(error: String) {
+                            Toast.makeText(
+                                this@Carte,
+                                error,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                )
+            }
 
             manualValidationPhotos.addAll(
                 result.getManualValidationPhotos().map { it.photo }
@@ -929,10 +956,34 @@ class Carte : AppCompatActivity() {
 
             Toast.makeText(
                 this,
-                "Acceptées : ${acceptedPhotos.size} | " +
-                        "Hors trajet : ${outsideTripPhotos.size} | " +
-                        "À valider : ${manualValidationPhotos.size}",
+                "Accepted: ${result.getAcceptedPhotos().size} | " +
+                        "Outside trip: ${outsideTripPhotos.size} | " +
+                        "Manual validation: ${manualValidationPhotos.size}",
                 Toast.LENGTH_LONG
             ).show()
         }
+
+    private fun loadPhotosForTrip() {
+
+        val photoManager = PhotoManager(this)
+        photoManager.setCurrentTripId(tripId ?: "")
+
+        photoManager.getPhotosForCurrentTrip(
+            object : PhotoManager.PhotoListCallback {
+
+                override fun onSuccess(photos: List<Photo>) {
+                    acceptedPhotos.clear()
+                    acceptedPhotos.addAll(photos)
+                }
+
+                override fun onError(error: String) {
+                    Toast.makeText(
+                        this@Carte,
+                        error,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
+    }
 }

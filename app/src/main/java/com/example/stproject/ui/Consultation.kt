@@ -1,7 +1,3 @@
-// RecyclerView une liste complète à afficher de l'écran, ici nous allons afficher chaque nom du voyage.
-// Consultation contrôle l'écran complet :
-// récupération des voyages et activation de la carte
-
 package com.example.stproject.ui
 
 import android.content.Intent
@@ -9,6 +5,9 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
+import android.widget.EditText
+import android.widget.RatingBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -26,176 +25,181 @@ class Consultation : AppCompatActivity() {
     private lateinit var tabEnCours: TextView
     private lateinit var tabTermines: TextView
 
-    // Manager utilisé pour récupérer et supprimer les voyages
     private val tripManager = TripManager()
-
-    // Liste complète des voyages récupérés
     private val voyages = mutableListOf<Voyage>()
-
-    // Liste affichée selon l'onglet choisi
     private val voyagesAffiches = mutableListOf<Voyage>()
 
-    // Indique si l'onglet "Terminés" est sélectionné
     private var afficherTermines = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Affiche l'écran consultation
         setContentView(R.layout.activity_consultation)
 
-        // Récupère la liste, le texte vide et les onglets
         recyclerView = findViewById(R.id.tripRecyclerView)
         emptyText = findViewById(R.id.emptyText)
         tabEnCours = findViewById(R.id.tabEnCours)
         tabTermines = findViewById(R.id.tabTermines)
 
-        // Affichage vertical des voyages
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Onglet des voyages en cours
         tabEnCours.setOnClickListener {
             afficherTermines = false
-            appliquerFiltreVoyages()
+            applyTripFilter()
         }
 
-        // Onglet des voyages terminés
         tabTermines.setOnClickListener {
             afficherTermines = true
-            appliquerFiltreVoyages()
+            applyTripFilter()
         }
 
-        // Charge les voyages
-        chargerVoyages()
+        loadTrips()
     }
 
-    private fun chargerVoyages() {
-        tripManager.recupererTousLesVoyages(
-            object : TripManager.ListeVoyagesCallback {
+    private fun loadTrips() {
+        tripManager.getAllTrips(
+            object : TripManager.TripsCallback {
 
-                override fun onSuccess(voyagesRecuperes: List<Voyage>) {
+                override fun onSuccess(trips: List<Voyage>) {
                     voyages.clear()
-                    voyages.addAll(voyagesRecuperes)
-
-                    appliquerFiltreVoyages()
+                    voyages.addAll(trips)
+                    applyTripFilter()
                 }
 
-                override fun onError(message: String) {
-                    Toast.makeText(
-                        this@Consultation,
-                        message,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                override fun onError(error: String) {
+                    Toast.makeText(this@Consultation, error, Toast.LENGTH_SHORT).show()
                 }
             }
         )
     }
 
-    private fun appliquerFiltreVoyages() {
+    private fun applyTripFilter() {
         voyagesAffiches.clear()
 
         for (voyage in voyages) {
-            val estTermine = voyage.isTermine
+            val isFinished = voyage.isTermine
 
-            if (afficherTermines && estTermine) {
+            if (afficherTermines && isFinished) {
                 voyagesAffiches.add(voyage)
             }
 
-            if (!afficherTermines && !estTermine) {
+            if (!afficherTermines && !isFinished) {
                 voyagesAffiches.add(voyage)
             }
         }
 
-        // Met en évidence l'onglet sélectionné
-        tabEnCours.setTypeface(
-            null,
-            if (!afficherTermines) Typeface.BOLD else Typeface.NORMAL
-        )
+        tabEnCours.setTypeface(null, if (!afficherTermines) Typeface.BOLD else Typeface.NORMAL)
+        tabTermines.setTypeface(null, if (afficherTermines) Typeface.BOLD else Typeface.NORMAL)
 
-        tabTermines.setTypeface(
-            null,
-            if (afficherTermines) Typeface.BOLD else Typeface.NORMAL
-        )
-
-        tabEnCours.setTextColor(
-            if (!afficherTermines) Color.BLACK else Color.GRAY
-        )
-
-        tabTermines.setTextColor(
-            if (afficherTermines) Color.BLACK else Color.GRAY
-        )
+        tabEnCours.setTextColor(if (!afficherTermines) Color.BLACK else Color.GRAY)
+        tabTermines.setTextColor(if (afficherTermines) Color.BLACK else Color.GRAY)
 
         if (voyagesAffiches.isEmpty()) {
             emptyText.visibility = View.VISIBLE
             recyclerView.visibility = View.GONE
-        } else {
-            emptyText.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
+            return
+        }
 
-            // Donne les voyages filtrés au RecyclerView
-            recyclerView.adapter = VoyageAdapter(
-                voyagesAffiches,
-                object : VoyageAdapter.OnVoyageClickListener {
+        emptyText.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
 
-                    // Ouvre la carte du voyage sélectionné
-                    override fun onVoyageClick(voyage: Voyage) {
-                        val intent = Intent(
+        recyclerView.adapter = VoyageAdapter(
+            voyagesAffiches,
+            object : VoyageAdapter.OnVoyageClickListener {
+
+                override fun onVoyageClick(voyage: Voyage) {
+                    val intent = Intent(this@Consultation, Carte::class.java)
+                    intent.putExtra("tripId", voyage.id)
+                    intent.putExtra("trip_name", voyage.titre)
+                    startActivity(intent)
+                }
+
+                override fun onVoyageEdit(voyage: Voyage) {
+                    showEditTripDialog(voyage)
+                }
+
+                override fun onVoyageDelete(voyage: Voyage) {
+                    showDeleteTripDialog(voyage)
+                }
+            }
+        )
+    }
+
+    private fun showDeleteTripDialog(voyage: Voyage) {
+        AlertDialog.Builder(this)
+            .setTitle("Supprimer le voyage")
+            .setMessage("Voulez-vous vraiment supprimer ce voyage ?")
+            .setPositiveButton("Supprimer") { _, _ ->
+
+                tripManager.deleteTrip(
+                    voyage,
+                    object : TripManager.TripCallback {
+
+                        override fun onSuccess() {
+                            voyages.remove(voyage)
+                            voyagesAffiches.remove(voyage)
+
+                            Toast.makeText(
+                                this@Consultation,
+                                "Voyage supprimé",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            applyTripFilter()
+                        }
+
+                        override fun onError(error: String) {
+                            Toast.makeText(this@Consultation, error, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+            .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    private fun showEditTripDialog(voyage: Voyage) {
+        val dialogView = layoutInflater.inflate(R.layout.edit_trip, null)
+
+        val editTitle = dialogView.findViewById<EditText>(R.id.editTripTitle)
+        val editDescription = dialogView.findViewById<EditText>(R.id.editTripDescription)
+        val editRating = dialogView.findViewById<RatingBar>(R.id.editTripRating)
+        val btnSave = dialogView.findViewById<Button>(R.id.btnSaveTripEdit)
+
+        editTitle.setText(voyage.titre)
+        editDescription.setText(voyage.description ?: "")
+        editRating.rating = voyage.note?.toFloat() ?: 0f
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        btnSave.setOnClickListener {
+            voyage.titre = editTitle.text.toString().trim()
+            voyage.description = editDescription.text.toString().trim()
+            voyage.note = editRating.rating.toInt()
+
+            tripManager.updateTrip(
+                voyage,
+                object : TripManager.TripCallback {
+
+                    override fun onSuccess() {
+                        Toast.makeText(
                             this@Consultation,
-                            Carte::class.java
-                        )
+                            "Voyage modifié",
+                            Toast.LENGTH_SHORT
+                        ).show()
 
-                        // Envoie l'id du voyage
-                        intent.putExtra("tripId", voyage.id)
-
-                        // Envoie le titre du voyage
-                        intent.putExtra("trip_name", voyage.titre)
-
-                        // Ouvre la carte du voyage
-                        startActivity(intent)
+                        dialog.dismiss()
+                        applyTripFilter()
                     }
 
-                    // Demande confirmation avant suppression
-                    override fun onVoyageDelete(voyage: Voyage) {
-                        AlertDialog.Builder(this@Consultation)
-                            .setTitle("Supprimer le voyage")
-                            .setMessage("Voulez-vous vraiment supprimer ce voyage ?")
-                            .setPositiveButton("Supprimer") { _, _ ->
-
-                                tripManager.supprimerVoyage(
-                                    voyage,
-                                    object : TripManager.SuppressionVoyageCallback {
-
-                                        override fun onSuccess() {
-                                            // Retire le voyage de la liste complète et de la liste affichée
-                                            voyages.remove(voyage)
-                                            voyagesAffiches.remove(voyage)
-
-                                            recyclerView.adapter?.notifyDataSetChanged()
-
-                                            Toast.makeText(
-                                                this@Consultation,
-                                                "Voyage supprimé",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-
-                                            appliquerFiltreVoyages()
-                                        }
-
-                                        override fun onError(message: String) {
-                                            Toast.makeText(
-                                                this@Consultation,
-                                                message,
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                )
-                            }
-                            .setNegativeButton("Annuler", null)
-                            .show()
+                    override fun onError(error: String) {
+                        Toast.makeText(this@Consultation, error, Toast.LENGTH_SHORT).show()
                     }
                 }
             )
         }
+
+        dialog.show()
     }
 }

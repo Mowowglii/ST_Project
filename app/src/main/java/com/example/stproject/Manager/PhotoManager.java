@@ -4,9 +4,11 @@ import android.content.Context;
 import android.location.Location;
 import android.net.Uri;
 
+import com.example.stproject.models.Photo;
 import com.example.stproject.models.PhotoAnalysisResult;
 import com.example.stproject.models.PhotoAnalysisStatus;
 import com.example.stproject.data.PhotoAnalyzer;
+import com.example.stproject.data.CFCommunicator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +19,14 @@ import java.util.List;
  */
 public class PhotoManager {
 
+    private final CFCommunicator cfCommunicator;
+
     private final PhotoAnalyzer photoAnalyzer;
+
 
     public PhotoManager(Context context) {
         this.photoAnalyzer = new PhotoAnalyzer(context);
+        this.cfCommunicator = new CFCommunicator();
     }
 
     public PhotoSelectionResult analyzeSelectedPhotos(List<Uri> imageUris,
@@ -77,5 +83,81 @@ public class PhotoManager {
         public List<PhotoAnalysisResult> getManualValidationPhotos() {
             return manualValidationPhotos;
         }
+    }
+    private String currentTripId;
+
+    public void setCurrentTripId(String tripId) {
+        this.currentTripId = tripId;
+    }
+
+    public interface PhotoCallback {
+        void onSuccess(Photo photo);
+        void onError(String error);
+    }
+
+    public void savePhotoToTrip(Photo photo, PhotoCallback callback) {
+
+        if (currentTripId == null || currentTripId.trim().isEmpty()) {
+            callback.onError("No trip selected");
+            return;
+        }
+
+        if (photo == null) {
+            callback.onError("Photo is invalid");
+            return;
+        }
+
+        if (photo.getImageURI() == null) {
+            callback.onError("Photo URI is missing");
+            return;
+        }
+
+        photo.setIdVoyage(currentTripId);
+
+        cfCommunicator.sendPictureToDb(
+                photo,
+                currentTripId,
+                new CFCommunicator.PhotoCallback() {
+
+                    @Override
+                    public void onSuccess(Photo savedPhoto) {
+                        callback.onSuccess(savedPhoto);
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
+    }
+
+    public interface PhotoListCallback {
+        void onSuccess(List<Photo> photos);
+        void onError(String error);
+    }
+
+    public void getPhotosForCurrentTrip(PhotoListCallback callback) {
+
+        if (currentTripId == null || currentTripId.trim().isEmpty()) {
+            callback.onError("No trip selected");
+            return;
+        }
+
+        cfCommunicator.getPhotosForTrip(
+                currentTripId,
+                new CFCommunicator.PhotoListCallback() {
+
+                    @Override
+                    public void onSuccess(List<Photo> photos) {
+                        callback.onSuccess(photos);
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        callback.onError(error);
+                    }
+                }
+        );
     }
 }
