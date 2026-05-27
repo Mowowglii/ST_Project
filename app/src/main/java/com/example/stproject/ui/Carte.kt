@@ -963,9 +963,10 @@ class Carte : AppCompatActivity() {
                     }
             }
 
-            manualValidationPhotos.addAll(
-                result.getManualValidationPhotos().map { it.photo }
-            )
+            result.getManualValidationPhotos().forEach { analysisResult ->
+                manualValidationPhotos.add(analysisResult.photo)
+                askManualPhotoValidation(analysisResult.photo, photoManager)
+            }
 
             outsideTripPhotos.addAll(
                 result.getOutsideTripPhotos().map { it.photo }
@@ -1007,5 +1008,62 @@ class Carte : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    private fun askManualPhotoValidation(
+        photo: Photo,
+        photoManager: PhotoManager
+    ) {
+        AlertDialog.Builder(this)
+            .setTitle("Validation manuelle")
+            .setMessage("Cette photo n'a pas de localisation GPS. Voulez-vous quand même l'ajouter au voyage ?")
+            .setPositiveButton("Accepter") { _, _ ->
+
+                val imageUri = photo.imageURI ?: return@setPositiveButton
+
+                val fileName = "${System.currentTimeMillis()}.jpg"
+                val pathInStorage = "voyages/${currentTrip.id}/photos/$fileName"
+
+                val storageRef = com.google.firebase.storage.FirebaseStorage
+                    .getInstance()
+                    .reference
+                    .child(pathInStorage)
+
+                storageRef.putFile(imageUri)
+                    .addOnSuccessListener {
+                        photoManager.savePhotoToTrip(
+                            pathInStorage,
+                            object : PhotoManager.PhotoSaveCallback {
+
+                                override fun onSuccess(photoPath: String) {
+                                    acceptedPhotos.add(photo)
+
+                                    Toast.makeText(
+                                        this@Carte,
+                                        "Photo added manually",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                override fun onError(error: String) {
+                                    Toast.makeText(
+                                        this@Carte,
+                                        error,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        )
+                    }
+                    .addOnFailureListener { error ->
+                        Toast.makeText(
+                            this@Carte,
+                            error.message ?: "Upload failed",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+            }
+            .setNegativeButton("Refuser", null)
+            .show()
     }
 }
