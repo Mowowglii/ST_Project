@@ -6,6 +6,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.example.stproject.models.POI;
+import com.example.stproject.models.Photo;
 import com.example.stproject.models.Voyage;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -256,7 +257,30 @@ public class CFCommunicator {
 
     // Images
 
-    public void sendPictureToDb(String pathToPicture, String tripName){
+    public String getPictureKey(Voyage trip){
+        return db.collection("voyages")
+                .document(trip.getId())
+                .collection("photos")
+                .document()
+                .getId();
+    }
+
+    public void sendPictureToDb(String pathToPictureInStorage, String tripId, String photoId){
+        // Créer la donnée
+        Map<String,Object> data = new HashMap<>();
+        data.put("pathInStorage", pathToPictureInStorage);
+
+        db.collection("voyages")
+                .document(tripId)
+                .collection("photos")
+                .document(photoId)
+                .set(data)
+                .addOnSuccessListener(aVoid ->{
+                    Log.d("FireStore", "Picture properly added to trip in DB");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FireStore", "Error during adding the picture to the DB :" + e.getMessage());
+                });
     }
 
     public interface PhotoCallback {
@@ -275,7 +299,7 @@ public class CFCommunicator {
 
                     for (DocumentSnapshot document : photoDocs.getDocuments()) {
 
-                        String path = document.getString("photo_path");
+                        String path = document.getString("pathInStorage");
 
                         if (path != null) {
                             photoPaths.add(path);
@@ -300,6 +324,20 @@ public class CFCommunicator {
                     }
                 })
                 .addOnFailureListener(e -> Log.e("CloudStorage", "Error listing files: " + e.getMessage()));
+    }
+
+    public void delPicture(Photo pic){
+        db.collection("voyages")
+                .document(pic.getAssociatedTrip())
+                .collection("photos")
+                .document(pic.getPhotoIdInFirestore())
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("Firestore", "Picture deleted properly");
+                })
+                .addOnFailureListener(e->{
+                    Log.d("Firestore", "Deletion failed");
+                });
     }
 
     // Chemin

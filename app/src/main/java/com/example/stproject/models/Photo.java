@@ -5,7 +5,8 @@ import android.net.Uri;
 public class Photo {
     private Uri imageURI;
     private String associatedTripId;
-    private POI associatedPOI;
+
+    private String photoIdInFirestore;
     private long timeStamp;
     private double latitude;
     private double longitude;
@@ -31,13 +32,9 @@ public class Photo {
         this.associatedTripId = associatedTrip;
     }
 
-    public POI getAssociatedPOI() {
-        return associatedPOI;
-    }
+    public String getPhotoIdInFirestore(){return this.photoIdInFirestore;}
 
-    public void setAssociatedPOI(POI associatedPOI) {
-        this.associatedPOI = associatedPOI;
-    }
+    public void setPhotoIdInFirestore(String id){this.photoIdInFirestore = id;}
 
     public double getLatitude() {
         return latitude;
@@ -55,11 +52,6 @@ public class Photo {
         this.longitude = longitude;
     }
 
-    public String getIdVoyage() {
-        return associatedTripId;
-    }
-
-    public void setIdVoyage(String idVoyage) {
-        this.associatedTripId = idVoyage;
-    }
+    public void setTimeStamp(long timeStamp){this.timeStamp = timeStamp;}
+    public long getTimeStamp(){return this.timeStamp;}
 }
